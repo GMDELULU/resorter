@@ -13,6 +13,10 @@
 // How long the pour takes: 1 = normal, 2 = twice as slow, 0.5 = twice as fast.
 const pourSpeed = 1;
 
+// The waves on the liquid while pouring: how high (in drawing units) and how fast they roll.
+const maxWaveHeight = 3;
+const waveSpeed = 6;
+
 // How long each step takes, in milliseconds (1000 = 1 second), at pourSpeed 1.
 const pourSteps = {
   rise: 150,
@@ -191,9 +195,15 @@ async function showPour(info) {
       const poured = moved * progress;   // how many layers have flowed out so far (can be 1.5)
 
       // The lifted bottle: tipped at its current angle, with less and less liquid.
-      drawLiveLiquid(sourceLiquid, sourceColours, sourceColours.length - poured, currentAngle(source));
+      // The waves: in the lifted bottle while it moves and pours; in the other bottle while it fills.
+      const wavePhase = now / 1000 * waveSpeed;
+      const sourceWaves = waveSize(now, step.rise, pourStart + step.pour + step.tipBack);
+      const targetWaves = waveSize(now, pourStart, pourStart + step.pour + 400);
+
+      drawLiveLiquid(sourceLiquid, sourceColours, sourceColours.length - poured, currentAngle(source),
+                     sourceWaves, wavePhase);
       // The other bottle: upright, with more and more liquid.
-      drawLiveLiquid(targetLiquid, targetColours, info.layersBefore + poured, 0);
+      drawLiveLiquid(targetLiquid, targetColours, info.layersBefore + poured, 0, targetWaves, wavePhase);
 
       // The stream: it grows down from the mouth at the start, and its tail falls in at the end.
       if (progress > 0 && progress < 1) {
@@ -230,6 +240,7 @@ function startLiveLiquid(button) {
   const normalLiquid = button.querySelector(".glass-content");
   normalLiquid.style.display = "none";
   const live = document.createElementNS(svgNamespace, "g");
+  live.setAttribute("clip-path", normalLiquid.getAttribute("clip-path"));   // the same stencil
   normalLiquid.after(live);   // in the same place, so the outlines stay on top
   return live;
 }
@@ -308,28 +319,71 @@ function waterLine(wantedArea, down) {
   return (high + low) / 2;
 }
 
-// drawLiveLiquid(group, colours, amount, angle) draws "amount" layers (it may be 2.5)
-// of the colours (bottom to top), level with the ground, in a bottle turned by "angle".
-function drawLiveLiquid(group, colours, amount, angle) {
+// drawLiveLiquid(group, colours, amount, angle, waveHeight, wavePhase) draws "amount" layers
+// (it may be 2.5) of the colours (bottom to top), level with the ground, in a bottle turned
+// by "angle". The top of the liquid rolls in waves: two waves of different sizes that slide
+// over each other, so the surface keeps moving. waveHeight 0 = a flat, calm surface.
+function drawLiveLiquid(group, colours, amount, angle, waveHeight, wavePhase) {
   group.replaceChildren();
-  const down = [Math.sin(angle), Math.cos(angle)];   // the direction of gravity, inside the bottle
-  let lowerLine = null;
+  const down = [Math.sin(angle), Math.cos(angle)];     // the direction of gravity, inside the bottle
+  const along = [Math.cos(angle), -Math.sin(angle)];   // the direction of the water surface
+
+  // 1. The water line at the top of every layer.
+  const lines = [];
   for (let i = 0; i < colours.length; i++) {
     const thisLayer = Math.min(1, amount - i);   // 1 = a full layer; 0.5 = half a layer
     if (thisLayer <= 0) {
       break;
     }
-    const upperLine = waterLine(areaOfLayers(i + thisLayer), down);
-    let shape = cutShape(bottleShape, down, upperLine, true);
-    if (lowerLine !== null) {
-      shape = cutShape(shape, down, lowerLine, false);
-    }
-    addSvgPart("polygon", {
-      class: "colour-" + colours[i],
-      points: shape.map(function (point) { return round(point[0]) + "," + round(point[1]); }).join(" ")
-    }, group);
-    lowerLine = upperLine;
+    lines.push(waterLine(areaOfLayers(i + thisLayer), down));
   }
+  if (lines.length === 0) {
+    return;   // an empty bottle: nothing to draw
+  }
+  const top = lines.length - 1;
+
+  // 2. The top layer: everything below a wavy surface. It is drawn bigger than the bottle;
+  //    the bottle's stencil cuts it to the right shape.
+  const centre = [32, 100];
+  const centreDepth = depthOf(centre, down);
+  const surface = [];
+  for (let s = -130; s <= 130; s = s + 4) {
+    const wave = waveHeight * (0.7 * Math.sin(s * 0.08 + wavePhase) +
+                               0.3 * Math.sin(s * 0.2 + wavePhase * 1.3));
+    const level = lines[top] - wave - centreDepth;   // a positive wave lifts the surface
+    surface.push([centre[0] + s * along[0] + level * down[0],
+                  centre[1] + s * along[1] + level * down[1]]);
+  }
+  const deep = 300;   // far below the bottle
+  surface.push([centre[0] + 130 * along[0] + deep * down[0], centre[1] + 130 * along[1] + deep * down[1]]);
+  surface.push([centre[0] - 130 * along[0] + deep * down[0], centre[1] - 130 * along[1] + deep * down[1]]);
+  addLiquidShape(group, colours[top], surface);
+
+  // 3. The other layers, drawn on top of it, each cut exactly between its two water lines.
+  for (let i = 0; i < top; i++) {
+    let shape = cutShape(bottleShape, down, lines[i], true);
+    if (i > 0) {
+      shape = cutShape(shape, down, lines[i - 1], false);
+    }
+    addLiquidShape(group, colours[i], shape);
+  }
+}
+
+// addLiquidShape(group, colour, points) draws one coloured shape.
+function addLiquidShape(group, colour, points) {
+  addSvgPart("polygon", {
+    class: "colour-" + colour,
+    points: points.map(function (point) { return round(point[0]) + "," + round(point[1]); }).join(" ")
+  }, group);
+}
+
+// waveSize(now, from, to) gives how big the waves are at time "now":
+// 0 before "from", growing to the biggest halfway, and back to 0 at "to" (a sine curve).
+function waveSize(now, from, to) {
+  if (now <= from || now >= to) {
+    return 0;
+  }
+  return maxWaveHeight * Math.sin(Math.PI * (now - from) / (to - from));
 }
 
 // currentLift(button) reads how far up a button is moved right now (0 if not lifted).
