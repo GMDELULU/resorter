@@ -6,18 +6,27 @@
   font-family: "Syne Tactile";
   src: url("fonts/SyneTactile-Regular.ttf");
 }
-/* Restored font: thin and elegant. Not used yet: it comes with the win transformation. */
+/* Chaos text font: an old, worn printed book, but easy to read. */
 @font-face {
-  font-family: "Pompiere";
+  font-family: "IM Fell English";
+  src: url("fonts/IMFellEnglish-Regular.ttf");
+}
+/* Restored fonts: not used yet. They come with the win transformation. */
+@font-face {
+  font-family: "Pompiere";        /* restored headings: thin and elegant */
   src: url("fonts/Pompiere-Regular.ttf");
+}
+@font-face {
+  font-family: "Josefin Sans";    /* restored text: clean Art Deco */
+  src: url("fonts/JosefinSans-Variable.ttf");
 }
 
 /* The whole page */
 body {
   background-color: #0B0806;   /* chaos background: almost black */
   color: #B48C3A;              /* normal text: dark gold (the style guide's halo colour, reused for text) */
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 18px;
+  font-family: "IM Fell English", Georgia, serif;   /* chaos text font; Georgia only if it fails to load */
+  font-size: 20px;             /* a bit bigger: this old-book font has small letters */
   text-align: center;
   margin: 0;
   padding: 24px 16px;
