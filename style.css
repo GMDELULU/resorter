@@ -245,3 +245,23 @@ h1 {
     height: 173px;
   }
 }
+
+/* ---------- The pour animation (pour.js) ---------- */
+
+/* A see-through layer over the whole page for the stream of colour.
+   pointer-events: none = taps go straight through it. */
+.pour-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* The stream grows downwards from the mouth of the bottle. */
+.stream {
+  transform-box: fill-box;
+  transform-origin: top;
+}

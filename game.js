@@ -48,6 +48,10 @@ let message = "";
 // The bottle where the last move went wrong (it will ripple), or null if nothing went wrong.
 let wrongBottle = null;
 
+// The last pour that happened, or null if the last tap was not a pour.
+// It is an object: a group of named values, like { from: 0, to: 4, colour: 2, ... }.
+let lastPour = null;
+
 // The message when the player wins.
 const winMessage = "Order is restored! Kharosa's chaos is sorted.";
 
@@ -140,6 +144,7 @@ function tapBottle(number) {
 
   message = "";
   wrongBottle = null;
+  lastPour = null;
 
   if (selectedBottle === null) {
     // Nothing picked up yet: pick up this bottle, unless it is empty.
@@ -157,7 +162,16 @@ function tapBottle(number) {
     const reason = whyNotPour(selectedBottle, number);
     if (reason === "") {
       moveHistory.push(copyBottles(bottles));   // remember how it was, for Undo
+      // Remember what this pour was, so the screen can show it as an animation.
+      const amountBefore = bottles[number].length;
+      const colour = topColour(bottles[selectedBottle]);
       pour(selectedBottle, number);
+      lastPour = {
+        from: selectedBottle,
+        to: number,
+        colour: colour,
+        layersBefore: amountBefore    // how many layers the target had before the pour
+      };
       if (checkWin()) {
         won = true;
         message = winMessage;

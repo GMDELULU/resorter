@@ -197,9 +197,16 @@ function drawBottles() {
     // An event listener: "when this button is clicked, do these steps".
     // "click" works the same for a mouse click, a finger tap and the Enter or Space key.
     button.addEventListener("click", function () {
+      if (pouring) {
+        return;                  // a pour animation is playing: wait until it is finished
+      }
       tapBottle(number);         // the rule: what a tap means (in game.js)
-      updateScreen();            // the look: show what changed
       moveKeyboardTo(number, false);   // the keyboard continues from the tapped bottle
+      if (lastPour !== null && !wantsLessMotion()) {
+        playPour(lastPour);      // show the pour as an animation (in pour.js)
+      } else {
+        updateScreen();          // the look: show what changed, at once
+      }
     });
 
     field.appendChild(button);
@@ -271,6 +278,12 @@ function updateScreen() {
 
 // ---------- The ripple: a wrong move makes the bottle wobble like water ----------
 
+// wantsLessMotion() is true when the player asked their phone or computer for less motion.
+// Then we skip animations and show the result at once.
+function wantsLessMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 // How long the ripple lasts (in milliseconds: 1000 = 1 second) and how strong it is.
 const rippleTime = 700;
 const rippleStrength = 6;
@@ -301,7 +314,7 @@ let rippleCount = 0;
 // ripple(button) makes the bottle inside this button wobble for a moment.
 function ripple(button) {
   // Players who asked for less motion get no ripple; they still see the message.
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (wantsLessMotion()) {
     return;
   }
 
@@ -356,11 +369,17 @@ function showSelection() {
 // Same pattern as the bottles: first the rule (game.js), then show what changed.
 
 document.getElementById("undo-button").addEventListener("click", function () {
+  if (pouring) {
+    return;   // wait until the pour animation is finished
+  }
   undo();
   updateScreen();
 });
 
 document.getElementById("restart-button").addEventListener("click", function () {
+  if (pouring) {
+    return;
+  }
   restart();
   updateScreen();
 });
