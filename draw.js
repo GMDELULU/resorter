@@ -538,5 +538,34 @@ document.getElementById("restart-button").addEventListener("click", function () 
   updateScreen();
 });
 
+// ---------- The difficulty menu ----------
+
+// "change" is the event when the player picks another option in the select menu.
+document.getElementById("difficulty").addEventListener("change", function (event) {
+  const menu = event.target;
+  if (busyBottles.size > 0) {
+    menu.value = currentDifficulty;   // wait until the pours are finished: put the menu back
+    return;
+  }
+  // A new difficulty starts a new level. If the player already made moves, ask first.
+  // (confirm shows a small question box with OK and Cancel; it gives true for OK.)
+  if (moveHistory.length > 0 && !won &&
+      !confirm("Start a new level? The moves you made in this level will be lost.")) {
+    menu.value = currentDifficulty;   // Cancel: put the menu back
+    return;
+  }
+  if (setDifficulty(menu.value)) {    // the rule side (game.js); it checks the name
+    currentDifficulty = menu.value;
+    keyboardBottle = 0;
+    drawBottles();                    // new buttons: the number of bottles changes
+    updateScreen();
+  }
+});
+
+// Which difficulty the menu shows now (the game starts on easy).
+let currentDifficulty = "easy";
+// Make sure the menu shows the same (a browser sometimes remembers an old choice after F5).
+document.getElementById("difficulty").value = currentDifficulty;
+
 // Call the function once, when the page opens.
 drawBottles();

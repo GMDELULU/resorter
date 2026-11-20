@@ -6,11 +6,20 @@
 // How many layers fit in one bottle.
 const capacity = 4;
 
-// How many colours a level has, and how many empty bottles.
-const colourCount = 4;
-const emptyBottles = 2;
+// The difficulty settings. More colours means harder.
+// Each one is an object: how many colours, and how many empty bottles.
+const difficulties = {
+  easy:   { colours: 4, empty: 2 },
+  medium: { colours: 5, empty: 2 },
+  hard:   { colours: 6, empty: 2 }
+};
 
-// A spare level, only used if the computer somehow cannot make a random one.
+// How many colours the current level has, and how many empty bottles. ("let": they change
+// when the player picks another difficulty.) The game starts on easy.
+let colourCount = difficulties.easy.colours;
+let emptyBottles = difficulties.easy.empty;
+
+// A spare (easy) level, only used if the computer somehow cannot make a random one at all.
 // Each bottle is a list of colour numbers, from BOTTOM to TOP.
 // (The last number is the top layer: the one you can pour.)
 // An empty list [] is an empty bottle.
@@ -237,11 +246,17 @@ function restart() {
 // makeRandomLevel() makes a new level and checks that it can be solved.
 // If a level cannot be solved, it simply throws it away and tries again.
 function makeRandomLevel() {
-  for (let attempt = 0; attempt < 500; attempt++) {
-    const level = shuffledLevel();
-    // A level is no good if a bottle is already sorted at the start, or if it can't be solved.
-    if (!level.some(isClosed) && canBeSolved(level)) {
-      return level;
+  // Normally a good level is found at once. With very many colours and few empty bottles it can
+  // take long, so after 2 seconds we add one extra empty bottle (that makes it easier to solve)
+  // and try again. So the page never freezes for long, and the level is always solvable.
+  for (let extraEmpty = 0; extraEmpty <= 3; extraEmpty++) {
+    const stopTime = performance.now() + 2000;
+    while (performance.now() < stopTime) {
+      const level = shuffledLevel(extraEmpty);
+      // A level is no good if a bottle is already sorted at the start, or if it can't be solved.
+      if (!level.some(isClosed) && canBeSolved(level)) {
+        return level;
+      }
     }
   }
   return copyBottles(spareLevel);   // (practically never needed)
@@ -249,7 +264,7 @@ function makeRandomLevel() {
 
 // shuffledLevel() puts every colour "capacity" times in a pile, shuffles the pile,
 // and fills the bottles from it. Then it adds the empty bottles.
-function shuffledLevel() {
+function shuffledLevel(extraEmpty = 0) {
   const pile = [];
   for (let colour = 1; colour <= colourCount; colour++) {
     for (let count = 0; count < capacity; count++) {
@@ -270,7 +285,7 @@ function shuffledLevel() {
   for (let bottle = 0; bottle < colourCount; bottle++) {
     level.push(pile.slice(bottle * capacity, (bottle + 1) * capacity));
   }
-  for (let count = 0; count < emptyBottles; count++) {
+  for (let count = 0; count < emptyBottles + extraEmpty; count++) {
     level.push([]);
   }
   return level;
@@ -334,4 +349,19 @@ function situationKey(list) {
 function newLevel() {
   startingBottles = makeRandomLevel();
   restart();
+}
+
+// ---------- Difficulty ----------
+
+// setDifficulty(name) switches to another difficulty ("easy", "medium", "hard")
+// and starts a new level with it. The name comes from the select menu on the page:
+// we check it is a real difficulty before we use it (data from outside the code is not trusted).
+function setDifficulty(name) {
+  if (!Object.hasOwn(difficulties, name)) {
+    return false;   // not a difficulty we know: do nothing
+  }
+  colourCount = difficulties[name].colours;
+  emptyBottles = difficulties[name].empty;
+  newLevel();
+  return true;
 }

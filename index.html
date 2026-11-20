@@ -16,6 +16,17 @@
       <button type="button" class="control-button" id="restart-button">Restart</button>
     </div>
 
+    <!-- The difficulty: a select menu (a drop-down list). Each <option> has a value for the code
+         (it must match a name in "difficulties" in game.js) and a text for the player. -->
+    <div class="settings">
+      <label for="difficulty">Difficulty</label>
+      <select id="difficulty" class="control-select" autocomplete="off">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+
     <!-- The playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
     <div class="bottles" id="bottles"></div>
 
