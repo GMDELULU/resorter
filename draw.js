@@ -92,10 +92,13 @@ function makeBottle(bottle, number) {
   const stencil = addSvgPart("clipPath", { id: stencilName }, picture);
   addSvgPart("polygon", { points: shapePoints }, stencil);
 
-  // The dark glass.
-  addSvgPart("polygon", { class: "glass", points: shapePoints }, picture);
+  // Everything you see goes in one group, "art", so the ripple effect can move it all together.
+  const art = addSvgPart("g", { class: "bottle-art" }, picture);
 
-  const glassContent = addSvgPart("g", { "clip-path": "url(#" + stencilName + ")" }, picture);
+  // The dark glass.
+  addSvgPart("polygon", { class: "glass", points: shapePoints }, art);
+
+  const glassContent = addSvgPart("g", { "clip-path": "url(#" + stencilName + ")" }, art);
 
   // The layers, from the bottom up. Each one gets a block of colour and pencil strokes.
   const layerHeight = liquidHeight / capacity;
@@ -164,14 +167,14 @@ function makeBottle(bottle, number) {
   addSvgPart("path", { class: "highlight", d: shineStrokes }, glassContent);
 
   // The outline: one thick dark line, then three thin, slightly crooked gold lines.
-  addSvgPart("path", { class: "outline-dark", d: pencilLine(bottleShape, 0, random, true) }, picture);
+  addSvgPart("path", { class: "outline-dark", d: pencilLine(bottleShape, 0, random, true) }, art);
   for (let count = 0; count < 3; count++) {
-    addSvgPart("path", { class: "outline", d: pencilLine(bottleShape, 0.9, random, true) }, picture);
+    addSvgPart("path", { class: "outline", d: pencilLine(bottleShape, 0.9, random, true) }, art);
   }
 
   // Two thin gold lines under the shoulder, like in the reference drawing.
-  addSvgPart("path", { class: "outline", d: pencilLine([[2, 70], [62, 70]], 0.5, random, false) }, picture);
-  addSvgPart("path", { class: "highlight", d: pencilLine([[2, 74], [62, 74]], 0.5, random, false) }, picture);
+  addSvgPart("path", { class: "outline", d: pencilLine([[2, 70], [62, 70]], 0.5, random, false) }, art);
+  addSvgPart("path", { class: "highlight", d: pencilLine([[2, 74], [62, 74]], 0.5, random, false) }, art);
 
   return picture;
 }
@@ -260,26 +263,74 @@ function updateScreen() {
   document.getElementById("message").textContent = message;
 
   if (wrongBottle !== null) {
-    shake(buttons[wrongBottle]);
+    ripple(buttons[wrongBottle]);
   }
 }
 
-// shake(button) makes one bottle give a short shake. style.css says how a shake looks.
-function shake(button) {
-  // If it is still shaking from a moment ago, stop that first,
-  // so a new wrong move always starts a fresh shake.
-  button.classList.remove("shake");
-  void button.offsetWidth;   // a small trick: makes the browser notice the class was removed
-  button.classList.add("shake");
-}
+// ---------- The ripple: a wrong move makes the bottle wobble like water ----------
 
-// When a shake animation has finished, take the class away again.
-// (Only for the "shake" animation: other animations we may add later should not count.)
-document.getElementById("bottles").addEventListener("animationend", function (event) {
-  if (event.animationName === "shake") {
-    event.target.classList.remove("shake");
+// How long the ripple lasts (in milliseconds: 1000 = 1 second) and how strong it is.
+const rippleTime = 700;
+const rippleStrength = 6;
+
+// The ripple is an SVG "filter": a recipe that bends a picture.
+// feTurbulence makes a pattern of soft random waves;
+// feDisplacementMap pushes every point of the bottle a little bit along those waves.
+// We make the filter once, in a small invisible SVG at the end of the page.
+const rippleHolder = addSvgPart("svg", { width: 0, height: 0, "aria-hidden": "true" });
+rippleHolder.style.position = "absolute";
+const rippleFilter = addSvgPart("filter", {
+  id: "ripple", x: "-10%", y: "-5%", width: "120%", height: "110%"
+}, rippleHolder);
+const rippleWaves = addSvgPart("feTurbulence", {
+  type: "fractalNoise", baseFrequency: "0.02 0.08", numOctaves: 1, seed: 3
+}, rippleFilter);
+const rippleBend = addSvgPart("feDisplacementMap", {
+  in: "SourceGraphic", scale: 0, xChannelSelector: "R", yChannelSelector: "G"
+}, rippleFilter);
+document.body.appendChild(rippleHolder);
+
+// The bottle that is rippling right now, so a new ripple can stop the old one first.
+let ripplingArt = null;
+
+// ripple(button) makes the bottle inside this button wobble for a moment.
+function ripple(button) {
+  // Players who asked for less motion get no ripple; they still see the message.
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
   }
-});
+
+  // Stop an older ripple, if there is one.
+  if (ripplingArt !== null) {
+    ripplingArt.removeAttribute("filter");
+  }
+
+  const art = button.querySelector(".bottle-art");
+  art.setAttribute("filter", "url(#ripple)");
+  ripplingArt = art;
+  const startTime = performance.now();
+
+  // One step of the animation. The browser calls it about 60 times per second
+  // (requestAnimationFrame = "call this just before you draw the next picture").
+  function step(now) {
+    if (ripplingArt !== art) {
+      return;   // a newer ripple has taken over
+    }
+    const progress = (now - startTime) / rippleTime;   // 0 at the start, 1 at the end
+    if (progress >= 1) {
+      rippleBend.setAttribute("scale", 0);
+      art.removeAttribute("filter");
+      ripplingArt = null;
+      return;
+    }
+    // The strength grows and then fades (a sine curve: 0, up to 1, back to 0).
+    rippleBend.setAttribute("scale", (Math.sin(progress * Math.PI) * rippleStrength).toFixed(2));
+    // The waves move a little, so it looks like running water.
+    rippleWaves.setAttribute("baseFrequency", (0.02 + 0.01 * Math.sin(progress * 12)).toFixed(3) + " 0.08");
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 
 // showSelection() lifts the picked-up bottle and puts all the others down.
 // It only changes a class name; style.css decides how "lifted" looks.
