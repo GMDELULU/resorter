@@ -130,7 +130,10 @@ h1 {
    On top of the colour: thin diagonal pencil strokes (hatching)
    and a darker right side, like in the style guide. */
 .layer {
-  height: 30px;
+  /* The body of the bottle has room for about 120 pixels of liquid.
+     draw.js puts the capacity (--capacity) on the playing field, and every layer inside reads it:
+     4 layers are 30 pixels high, 5 layers 24 pixels. The ", 4" means: use 4 if nobody set it. */
+  height: calc(120px / var(--capacity, 4));
   flex-shrink: 0;              /* never squash a layer */
   background-image:
     linear-gradient(to right, transparent 55%, #090705AA),

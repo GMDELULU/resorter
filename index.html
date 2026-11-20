@@ -10,61 +10,12 @@
     <h1>ReSorter</h1>
     <p>Kharosa has mixed up the world. Help sort it back into order.</p>
 
-    <!-- The playing field: all bottles. Each bottle lists its layers from TOP to BOTTOM. -->
-    <div class="bottles">
+    <!-- The playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
+    <div class="bottles" id="bottles"></div>
 
-      <div class="bottle">
-        <div class="bottle-inside">
-          <div class="layer colour-2"></div>
-          <div class="layer colour-1"></div>
-          <div class="layer colour-3"></div>
-          <div class="layer colour-4"></div>
-        </div>
-      </div>
-
-      <div class="bottle">
-        <div class="bottle-inside">
-          <div class="layer colour-4"></div>
-          <div class="layer colour-3"></div>
-          <div class="layer colour-1"></div>
-          <div class="layer colour-2"></div>
-        </div>
-      </div>
-
-      <div class="bottle">
-        <div class="bottle-inside">
-          <div class="layer colour-1"></div>
-          <div class="layer colour-2"></div>
-          <div class="layer colour-3"></div>
-          <div class="layer colour-4"></div>
-        </div>
-      </div>
-
-      <div class="bottle">
-        <div class="bottle-inside">
-          <div class="layer colour-3"></div>
-          <div class="layer colour-4"></div>
-          <div class="layer colour-2"></div>
-          <div class="layer colour-1"></div>
-        </div>
-      </div>
-
-      <!-- Three empty bottles, so there is room to sort -->
-      <div class="bottle">
-        <div class="bottle-inside"></div>
-      </div>
-
-      <div class="bottle">
-        <div class="bottle-inside"></div>
-      </div>
-
-      <div class="bottle">
-        <div class="bottle-inside"></div>
-      </div>
-
-    </div>
-
-    <!-- The game rules and data, in JavaScript. At the end, so the page is loaded first. -->
+    <!-- JavaScript, at the end so the page is loaded first.
+         game.js = the data and rules. draw.js = puts them on the screen. -->
     <script src="game.js"></script>
+    <script src="draw.js"></script>
   </body>
 </html>
