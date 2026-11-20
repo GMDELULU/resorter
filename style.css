@@ -24,6 +24,14 @@
 /* The whole page */
 body {
   background-color: #0B0806;   /* chaos background: almost black */
+  /* On top of it: faint rows of gold rune marks (background.svg, repeated), and a dark
+     vignette that makes the edges of the screen darker (the style guide asks for both). */
+  background-image:
+    radial-gradient(ellipse at center, transparent 45%, #0B0806E6 100%),
+    url("background.svg");
+  background-attachment: fixed;   /* the pattern stays still when the page scrolls */
+  min-height: 100vh;
+  box-sizing: border-box;
   color: #B48C3A;              /* normal text: dark gold (the style guide's halo colour, reused for text) */
   font-family: "Jaro", Georgia, serif;   /* chaos text font; Georgia only if it fails to load */
   font-size: 20px;
@@ -98,8 +106,7 @@ h1 {
   display: block;
   width: 64px;
   height: 216px;
-  filter: drop-shadow(0 8px 10px #E2B24A40);   /* soft gold glow (gold, a quarter visible) */
-  overflow: visible;           /* the stopper may poke out above the drawing area */
+  overflow: visible;           /* the stopper, light pool and embers may poke out of the drawing area */
 }
 
 /* The stopper of a sorted bottle: dark inside, gold lines (see draw.js) */
@@ -300,4 +307,20 @@ h1 {
 /* The sparks of the firework (sparkle.js): short strokes with square ends, not round dots. */
 .spark {
   stroke-linecap: butt;
+}
+
+/* ---------- Light around the bottles (draw.js) ---------- */
+
+/* Tiny gold ember strokes around the base of each bottle (short strokes, not dots). */
+.ember {
+  fill: none;
+  stroke: #E2B24A;             /* gold */
+  stroke-width: 0.9;
+  opacity: 0.55;
+}
+
+/* A bottle that is flying over to pour leaves its light and embers on the ground (pour.js). */
+.flying .light-pool,
+.flying .ember {
+  visibility: hidden;
 }

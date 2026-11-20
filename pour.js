@@ -75,6 +75,7 @@ async function playPour(info) {
     source.style.position = "";
     source.style.zIndex = "";
     source.style.transition = "";
+    source.classList.remove("flying");
     busyBottles.delete(info.from);
     busyBottles.delete(info.to);
     updateScreen();   // draw these two bottles normally again, with their new layers
@@ -118,8 +119,10 @@ async function showPour(info, source, target) {
   const pourY = mouthY + mouthDistance * Math.cos(radians) - sourceMiddleY;
 
   // The moving bottle goes in front of the others (z-index), like lifting it towards you.
+  // Its light pool and embers stay behind on the ground: we hide them while it flies.
   source.style.position = "relative";
   source.style.zIndex = "10";
+  source.classList.add("flying");
 
   // 2. The liquid. While the bottle moves, we draw the liquid ourselves, many times per second:
   //    it stays level like real water, slides towards the mouth when the bottle tips,

@@ -122,6 +122,26 @@ function makeBottle(bottle, number) {
   const stencil = addSvgPart("clipPath", { id: stencilName }, picture);
   addSvgPart("polygon", { points: pointsText(liquidShape) }, stencil);
 
+  // ---- Light on the ground ----
+  // A warm pool of gold light under the bottle, fading outwards (a "radial gradient").
+  const poolName = "light-pool-" + number;
+  const pool = addSvgPart("radialGradient", { id: poolName }, picture);
+  addSvgPart("stop", { offset: "0", "stop-color": "#E2B24A", "stop-opacity": "0.45" }, pool);
+  addSvgPart("stop", { offset: "0.5", "stop-color": "#E2B24A", "stop-opacity": "0.15" }, pool);
+  addSvgPart("stop", { offset: "1", "stop-color": "#E2B24A", "stop-opacity": "0" }, pool);
+  addSvgPart("ellipse", {
+    class: "light-pool", cx: bottleWidth / 2, cy: 208, rx: bottleWidth * 0.95, ry: 11, fill: "url(#" + poolName + ")"
+  }, picture);
+
+  // A few tiny gold embers around the base: short strokes, not dots (see the style guide).
+  let embers = "";
+  for (let count = 0; count < 7; count++) {
+    const ex = -8 + random() * (bottleWidth + 16);
+    const ey = 186 + random() * 26;
+    embers += "M" + round(ex) + " " + round(ey) + " l" + round((random() - 0.5) * 2) + " " + round(-(2 + random() * 3)) + " ";
+  }
+  addSvgPart("path", { class: "ember", d: embers }, picture);
+
   // Everything you see goes in one group, "art", so the ripple effect can move it all together.
   const art = addSvgPart("g", { class: "bottle-art" }, picture);
 
