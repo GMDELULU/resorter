@@ -176,7 +176,29 @@ function makeBottle(bottle, number) {
   addSvgPart("path", { class: "outline", d: pencilLine([[2, 70], [62, 70]], 0.5, random, false) }, art);
   addSvgPart("path", { class: "highlight", d: pencilLine([[2, 74], [62, 74]], 0.5, random, false) }, art);
 
+  // A sorted, closed bottle gets its gold stopper: the pentagon from the reference drawing.
+  if (isClosed(bottle)) {
+    addStopper(art, random);
+  }
+
   return picture;
+}
+
+// The stopper's corner points: a pentagon sitting on the neck (it pokes out above the bottle).
+const stopperShape = [[32, -22], [46, -10], [41, 4], [23, 4], [18, -10]];
+
+// addStopper(art, random) draws the stopper in pencil style: a dark fill, a sketchy gold outline,
+// and thin lines from the middle to every corner, like the cut faces of a gem.
+function addStopper(art, random) {
+  const stopper = addSvgPart("g", { class: "stopper" }, art);
+  const points = stopperShape.map(function (point) { return point.join(","); }).join(" ");
+  addSvgPart("polygon", { class: "stopper-body", points: points }, stopper);
+  stopperShape.forEach(function (corner) {
+    addSvgPart("path", { class: "highlight", d: pencilLine([[32, -8], corner], 0.4, random, false) }, stopper);
+  });
+  for (let count = 0; count < 2; count++) {
+    addSvgPart("path", { class: "outline", d: pencilLine(stopperShape, 0.6, random, true) }, stopper);
+  }
 }
 
 // ---------- Drawing all bottles ----------
@@ -273,6 +295,11 @@ function updateScreen() {
 
   if (wrongBottle !== null) {
     ripple(buttons[wrongBottle]);
+  }
+
+  // A bottle was just sorted: its stopper drops on, with a firework (in sparkle.js).
+  if (justClosed !== null && !wantsLessMotion()) {
+    dropStopper(buttons[justClosed]);
   }
 }
 

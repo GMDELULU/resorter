@@ -52,6 +52,9 @@ let wrongBottle = null;
 // It is an object: a group of named values, like { from: 0, to: 4, colour: 2, ... }.
 let lastPour = null;
 
+// The bottle that was just closed by the last pour (it gets its stopper), or null.
+let justClosed = null;
+
 // The message when the player wins.
 const winMessage = "Order is restored! Kharosa's chaos is sorted.";
 
@@ -77,6 +80,12 @@ function isSorted(bottle) {
     }
   }
   return true;
+}
+
+// isClosed(bottle) checks if a bottle is sorted AND has colour in it: then it gets its stopper
+// and is closed. (An empty bottle is "sorted" too, but it stays open.)
+function isClosed(bottle) {
+  return bottle.length > 0 && isSorted(bottle);
 }
 
 // checkWin() checks all bottles. One bottle that is not sorted is enough to say "not yet".
@@ -107,7 +116,9 @@ function whyNotPour(from, to) {
   const source = bottles[from];
   const target = bottles[to];
 
-  if (target.length === capacity) {
+  if (isClosed(target)) {
+    return "That bottle is sorted and closed.";
+  } else if (target.length === capacity) {
     return "That bottle is full.";
   } else if (target.length > 0 && topColour(target) !== topColour(source)) {
     return "You can only pour onto the same colour.";
@@ -145,11 +156,15 @@ function tapBottle(number) {
   message = "";
   wrongBottle = null;
   lastPour = null;
+  justClosed = null;
 
   if (selectedBottle === null) {
-    // Nothing picked up yet: pick up this bottle, unless it is empty.
+    // Nothing picked up yet: pick up this bottle, unless it is empty or closed.
     if (bottles[number].length === 0) {
       message = "That bottle is empty. Pick a bottle with colour in it.";
+      wrongBottle = number;
+    } else if (isClosed(bottles[number])) {
+      message = "That bottle is sorted and closed.";
       wrongBottle = number;
     } else {
       selectedBottle = number;
@@ -172,6 +187,9 @@ function tapBottle(number) {
         colour: colour,
         layersBefore: amountBefore    // how many layers the target had before the pour
       };
+      if (isClosed(bottles[number])) {
+        justClosed = number;   // this pour sorted the bottle: it gets its stopper
+      }
       if (checkWin()) {
         won = true;
         message = winMessage;
@@ -190,6 +208,7 @@ function tapBottle(number) {
 function undo() {
   selectedBottle = null;
   wrongBottle = null;
+  justClosed = null;
   if (moveHistory.length === 0) {
     message = "Nothing to undo yet.";
     return;
@@ -202,6 +221,7 @@ function undo() {
 // restart() puts the level back to how it started.
 function restart() {
   bottles = copyBottles(startingBottles);
+  justClosed = null;
   moveHistory = [];
   selectedBottle = null;
   wrongBottle = null;

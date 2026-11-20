@@ -99,6 +99,12 @@ h1 {
   width: 72px;
   height: 208px;
   filter: drop-shadow(0 8px 10px #E2B24A40);   /* soft gold glow (gold, a quarter visible) */
+  overflow: visible;           /* the stopper may poke out above the drawing area */
+}
+
+/* The stopper of a sorted bottle: dark inside, gold lines (see draw.js) */
+.stopper-body {
+  fill: #0B0806;               /* chaos background: almost black */
 }
 
 /* The message line under the bottles. It always keeps room for one line,
@@ -264,4 +270,9 @@ h1 {
 .stream {
   transform-box: fill-box;
   transform-origin: top;
+}
+
+/* The sparks of the firework (sparkle.js): short strokes with square ends, not round dots. */
+.spark {
+  stroke-linecap: butt;
 }
