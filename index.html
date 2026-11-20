@@ -29,15 +29,6 @@
       </select>
     </div>
 
-    <!-- A switch (checkbox) for colour-blind players: always show a symbol on every colour.
-         (From 6 colours on, the symbols show anyway.) -->
-    <div class="settings">
-      <label class="switch-label" for="symbols-switch">
-        <input type="checkbox" id="symbols-switch" class="switch" autocomplete="off">
-        Always show symbols
-      </label>
-    </div>
-
     <!-- The playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
     <div class="bottles" id="bottles"></div>
 
@@ -54,6 +45,16 @@
     <!-- Forget everything the game saved in this browser (privacy: the player decides). -->
     <div class="footer">
       <button type="button" class="control-button small-button" id="reset-progress">Reset progress</button>
+    </div>
+
+    <!-- The colour-blind switch: always at the bottom of the screen. It says On or Off in words,
+         so you never need to see a colour to know its state. role="switch" tells screen readers
+         it is an on/off switch; aria-checked says if it is on. -->
+    <div class="access-bar">
+      <button type="button" id="symbols-switch" class="toggle" role="switch" aria-checked="false">
+        <span class="toggle-track" aria-hidden="true"><span class="toggle-knob"></span></span>
+        <span class="toggle-text">Colour-blind symbols: <strong id="symbols-state">Off</strong></span>
+      </button>
     </div>
 
     <!-- JavaScript, at the end so the page is loaded first.

@@ -654,13 +654,21 @@ document.getElementById("difficulty").value = difficultyName;
 // ---------- The "always show symbols" switch ----------
 
 const symbolsSwitch = document.getElementById("symbols-switch");
-symbolsSwitch.checked = alwaysSymbols;   // show the saved choice
+showSwitch();   // show the saved choice
 
-symbolsSwitch.addEventListener("change", function () {
-  alwaysSymbols = symbolsSwitch.checked;
+symbolsSwitch.addEventListener("click", function () {
+  alwaysSymbols = !alwaysSymbols;                 // ! = "not": on becomes off, off becomes on
   saveSetting("alwaysSymbols", alwaysSymbols);   // remember it (save.js)
+  showSwitch();
   redrawAllBottles();
 });
+
+// showSwitch() makes the switch show its state: in words (On / Off), by the knob's place,
+// and for screen readers (aria-checked).
+function showSwitch() {
+  symbolsSwitch.setAttribute("aria-checked", alwaysSymbols ? "true" : "false");
+  document.getElementById("symbols-state").textContent = alwaysSymbols ? "On" : "Off";
+}
 
 // redrawAllBottles() draws every (not busy) bottle again, even if its layers did not change.
 function redrawAllBottles() {
@@ -683,7 +691,7 @@ document.getElementById("reset-progress").addEventListener("click", function () 
   }
   resetProgress();                    // save.js
   alwaysSymbols = false;              // the settings are forgotten too
-  symbolsSwitch.checked = false;
+  showSwitch();
   document.getElementById("difficulty").value = difficultyName;
   keyboardBottle = 0;
   drawBottles();

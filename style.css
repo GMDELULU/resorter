@@ -536,23 +536,6 @@ body::before {
   stroke-linejoin: miter;
 }
 
-/* The "Always show symbols" switch: the whole label can be tapped, at least 44 pixels high. */
-.switch-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 8px;
-  cursor: pointer;
-  font-size: 18px;
-}
-.switch {
-  width: 24px;
-  height: 24px;
-  accent-color: var(--gold);   /* the tick box in gold */
-  cursor: pointer;
-}
-
 /* Text only for screen readers: on the page for them, but not visible on the screen. */
 .screen-reader-only {
   position: absolute;
@@ -561,4 +544,82 @@ body::before {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* ---------- The colour-blind switch, in a bar at the bottom (always visible) ---------- */
+
+/* The bar stays at the bottom of the screen, also when the page scrolls. */
+.access-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;                           /* above the bottles and the special moments */
+  display: flex;
+  justify-content: center;
+  padding: 6px 12px calc(6px + env(safe-area-inset-bottom));   /* room for a phone's home bar */
+  background-color: color-mix(in srgb, var(--background) 94%, transparent);
+  border-top: 2px solid var(--gold);
+}
+
+/* Room at the bottom of the page, so the bar never covers the last things on the page. */
+body {
+  padding-bottom: 80px;
+}
+
+/* The switch: a big button, easy to see and to tap (at least 44 pixels high).
+   Clear, plain letters (Josefin Sans) in strong contrast; the size grows with the screen,
+   between 16 and 20 pixels ("clamp"). */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 4px 14px;
+  font-family: "Josefin Sans", Arial, sans-serif;
+  font-size: clamp(16px, 4.4vw, 20px);
+  font-weight: 600;
+  color: var(--text-strong);
+  background: none;
+  border: 2px solid var(--gold);
+  border-radius: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.toggle:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 4px;
+}
+
+/* The track and the knob. Off: the knob on the left, the track empty.
+   On: the knob on the right, the track filled. (The words On/Off say it too.) */
+.toggle-track {
+  position: relative;
+  width: 46px;
+  height: 24px;
+  border: 2px solid var(--text-strong);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: var(--text-strong);
+  transition: left 0.15s;
+}
+.toggle[aria-checked="true"] .toggle-track {
+  background-color: var(--gold);
+}
+.toggle[aria-checked="true"] .toggle-knob {
+  left: 24px;
+  background-color: var(--background);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle-knob {
+    transition: none;
+  }
 }
