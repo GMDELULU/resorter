@@ -324,3 +324,31 @@ h1 {
 .flying .ember {
   visibility: hidden;
 }
+
+/* ---------- Special moments (sparkle.js) ---------- */
+
+/* The layer for the sun with feathers: over the whole page, but BEHIND the bottles.
+   The bottles get z-index 1 (below), this layer stays at 0. */
+.moment-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+}
+.bottles,
+.controls,
+.message,
+h1,
+p {
+  position: relative;
+  z-index: 1;
+}
+/* The sun grows and fades from its own middle. */
+.sunburst {
+  transform-box: fill-box;
+  transform-origin: center;
+}

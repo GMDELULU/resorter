@@ -384,6 +384,7 @@ function updateScreen() {
   // Not won (any more, for example after Undo): stop a waiting timer.
   if (won && newLevelTimer === null) {
     newLevelTimer = setTimeout(startNextLevel, newLevelDelay);
+    celebrateWin();   // the big sunburst (sparkle.js)
   } else if (!won && newLevelTimer !== null) {
     clearTimeout(newLevelTimer);
     newLevelTimer = null;
