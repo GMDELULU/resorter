@@ -31,6 +31,11 @@ const colourSymbols = [
 const colourNames = ["gold", "crimson", "verdigris", "bone", "indigo",
                      "rust", "amethyst", "deep teal", "olive", "ash"];
 
+// The look: "liquid" (bottles) or "attic" (shelves with boxes). Saved as a setting (save.js).
+const looks = ["liquid", "attic"];
+let currentLook = loadChoice("look", looks, "liquid");
+document.body.classList.toggle("theme-attic", currentLook === "attic");
+
 // Show the symbols? Always from 6 colours on (style guide), or always if the player switched them on.
 let alwaysSymbols = loadSetting("alwaysSymbols", false);   // (save.js)
 function showSymbols() {
@@ -140,6 +145,10 @@ function wavyEdge(y, random) {
 // makeBottle(bottle, number) draws one bottle from its list of colours (bottom to top).
 // "number" is the bottle's place in the list: 0, 1, 2...
 function makeBottle(bottle, number) {
+  // In the attic look, draw a shelf with boxes instead (attic.js).
+  if (currentLook === "attic") {
+    return makeShelf(bottle, number);
+  }
   const random = makeRandom(1000 + number * 7919);   // every bottle has its own dice
 
   // The picture. viewBox: the drawing area, with a margin on every side.
@@ -155,25 +164,7 @@ function makeBottle(bottle, number) {
   const stencil = addSvgPart("clipPath", { id: stencilName }, picture);
   addSvgPart("polygon", { points: pointsText(liquidShape) }, stencil);
 
-  // ---- Light on the ground ----
-  // A warm pool of gold light under the bottle, fading outwards (a "radial gradient").
-  const poolName = "light-pool-" + number;
-  const pool = addSvgPart("radialGradient", { id: poolName }, picture);
-  addSvgPart("stop", { offset: "0", style: "stop-color: var(--gold); stop-opacity: 0.45" }, pool);
-  addSvgPart("stop", { offset: "0.5", style: "stop-color: var(--gold); stop-opacity: 0.15" }, pool);
-  addSvgPart("stop", { offset: "1", style: "stop-color: var(--gold); stop-opacity: 0" }, pool);
-  addSvgPart("ellipse", {
-    class: "light-pool", cx: bottleWidth / 2, cy: 208, rx: bottleWidth * 0.95, ry: 11, fill: "url(#" + poolName + ")"
-  }, picture);
-
-  // A few tiny gold embers around the base: short strokes, not dots (see the style guide).
-  let embers = "";
-  for (let count = 0; count < 7; count++) {
-    const ex = -8 + random() * (bottleWidth + 16);
-    const ey = 186 + random() * 26;
-    embers += "M" + round(ex) + " " + round(ey) + " l" + round((random() - 0.5) * 2) + " " + round(-(2 + random() * 3)) + " ";
-  }
-  addSvgPart("path", { class: "ember", d: embers }, picture);
+  addLightPool(picture, number, random);   // the gold light on the ground (further down)
 
   // Everything you see goes in one group, "art", so the ripple effect can move it all together.
   const art = addSvgPart("g", { class: "bottle-art" }, picture);
@@ -235,17 +226,7 @@ function makeBottle(bottle, number) {
   addSvgPart("path", { class: "hatch-light", d: lightStrokes }, glassContent);
   addSvgPart("path", { class: "hatch-dark", d: scribbles }, glassContent);
 
-  // The symbols: one in the middle of every layer, dark pencil with a light edge under it.
-  if (showSymbols()) {
-    bottle.forEach(function (colour, place) {
-      const middleY = bottleBottom - (place + 0.5) * layerHeight;
-      const symbol = addSvgPart("g", {
-        transform: "translate(" + round(bottleWidth / 2) + " " + round(middleY) + ")"
-      }, glassContent);
-      addSvgPart("path", { class: "symbol-edge", d: colourSymbols[colour - 1] }, symbol);
-      addSvgPart("path", { class: "symbol", d: colourSymbols[colour - 1] }, symbol);
-    });
-  }
+  addSymbols(glassContent, bottle);   // colour-blind symbols, if needed (further down)
 
   // A thin darker line on every border between two layers, and a light line on top of the liquid.
   borders.slice(1).forEach(function (border, place) {
@@ -298,6 +279,45 @@ function makeBottle(bottle, number) {
   return picture;
 }
 
+// addLightPool(picture, number, random) draws the warm pool of gold light on the ground under
+// a bottle (a "radial gradient", fading outwards), and a few tiny gold ember strokes.
+function addLightPool(picture, number, random) {
+  const poolName = "light-pool-" + number;
+  const pool = addSvgPart("radialGradient", { id: poolName }, picture);
+  addSvgPart("stop", { offset: "0", style: "stop-color: var(--gold); stop-opacity: 0.45" }, pool);
+  addSvgPart("stop", { offset: "0.5", style: "stop-color: var(--gold); stop-opacity: 0.15" }, pool);
+  addSvgPart("stop", { offset: "1", style: "stop-color: var(--gold); stop-opacity: 0" }, pool);
+  addSvgPart("ellipse", {
+    class: "light-pool", cx: bottleWidth / 2, cy: 208, rx: bottleWidth * 0.95, ry: 11, fill: "url(#" + poolName + ")"
+  }, picture);
+
+  // Embers: short strokes, not dots (see the style guide).
+  let embers = "";
+  for (let count = 0; count < 7; count++) {
+    const ex = -8 + random() * (bottleWidth + 16);
+    const ey = 186 + random() * 26;
+    embers += "M" + round(ex) + " " + round(ey) + " l" + round((random() - 0.5) * 2) + " " + round(-(2 + random() * 3)) + " ";
+  }
+  addSvgPart("path", { class: "ember", d: embers }, picture);
+}
+
+// addSymbols(group, bottle) draws the colour-blind symbols, one in the middle of every layer:
+// dark pencil with a light edge under it. Only if they should show (showSymbols).
+function addSymbols(group, bottle) {
+  if (!showSymbols()) {
+    return;
+  }
+  const layerHeight = liquidHeight / capacity;
+  bottle.forEach(function (colour, place) {
+    const middleY = bottleBottom - (place + 0.5) * layerHeight;
+    const symbol = addSvgPart("g", {
+      transform: "translate(" + round(bottleWidth / 2) + " " + round(middleY) + ")"
+    }, group);
+    addSvgPart("path", { class: "symbol-edge", d: colourSymbols[colour - 1] }, symbol);
+    addSvgPart("path", { class: "symbol", d: colourSymbols[colour - 1] }, symbol);
+  });
+}
+
 // The stopper's corner points: a small pentagon gem sitting on the neck (it pokes out above it).
 const stopperShape = [[28, -20], [40, -9], [36, 4], [20, 4], [16, -9]];
 const stopperMiddle = [28, -6];
@@ -319,7 +339,9 @@ function addStopper(art, random) {
 // announcePour(info) tells screen-reader users what a pour did, for example
 // "Poured gold into bottle 3. It is sorted."
 function announcePour(info) {
-  let words = "Poured " + colourNames[info.colour - 1] + " into bottle " + (info.to + 1) + ".";
+  let words = (currentLook === "attic" ? "Moved " + colourNames[info.colour - 1] + " boxes onto shelf "
+                                        : "Poured " + colourNames[info.colour - 1] + " into bottle ")
+              + (info.to + 1) + ".";
   if (info.closes) {
     words = words + " It is sorted.";
   }
@@ -328,7 +350,7 @@ function announcePour(info) {
 
 // bottleDescription(bottle, number) says in words what is in a bottle, for screen readers.
 function bottleDescription(bottle, number) {
-  const name = "Bottle " + (number + 1);
+  const name = (currentLook === "attic" ? "Shelf " : "Bottle ") + (number + 1);
   if (bottle.length === 0) {
     return name + ", empty";
   }
@@ -364,7 +386,11 @@ function drawBottles() {
       tapBottle(number);         // the rule: what a tap means (in game.js)
       moveKeyboardTo(number, false);   // the keyboard continues from the tapped bottle
       if (lastPour !== null && !wantsLessMotion()) {
-        playPour(lastPour);      // show the pour as an animation (in pour.js); other bottles stay free
+        if (currentLook === "attic") {
+          playBoxMove(lastPour);   // the boxes fly over (attic.js)
+        } else {
+          playPour(lastPour);      // show the pour as an animation (in pour.js); other bottles stay free
+        }
         showSelection();
         if (!won) {
           showMessage();         // (a win message waits until the last pour has finished)
@@ -678,6 +704,28 @@ function redrawAllBottles() {
   updateScreen();
 }
 
+// ---------- The Look menu: bottles or attic boxes ----------
+
+const lookMenu = document.getElementById("look");
+lookMenu.value = currentLook;
+
+lookMenu.addEventListener("change", function () {
+  if (busyBottles.size > 0 || !looks.includes(lookMenu.value)) {
+    lookMenu.value = currentLook;   // wait until moves are finished, or an unknown look: put it back
+    return;
+  }
+  setLook(lookMenu.value);
+});
+
+// setLook(look) switches the look, remembers it, and draws everything again.
+function setLook(look) {
+  currentLook = look;
+  saveChoice("look", look);   // (save.js)
+  document.body.classList.toggle("theme-attic", look === "attic");
+  lookMenu.value = look;
+  redrawAllBottles();
+}
+
 // ---------- Reset progress ----------
 
 document.getElementById("reset-progress").addEventListener("click", function () {
@@ -692,6 +740,9 @@ document.getElementById("reset-progress").addEventListener("click", function () 
   resetProgress();                    // save.js
   alwaysSymbols = false;              // the settings are forgotten too
   showSwitch();
+  currentLook = "liquid";
+  lookMenu.value = "liquid";
+  document.body.classList.remove("theme-attic");
   document.getElementById("difficulty").value = difficultyName;
   keyboardBottle = 0;
   drawBottles();

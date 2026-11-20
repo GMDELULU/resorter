@@ -189,3 +189,31 @@ function saveSetting(name, value) {
     // saving not allowed: the setting just lasts until the page closes
   }
 }
+
+// loadChoice(name, allowed, standard) reads a setting that is one word from a fixed list,
+// like the look ("liquid" or "attic"). Anything not on the list gives back "standard".
+function loadChoice(name, allowed, standard) {
+  try {
+    const settings = JSON.parse(localStorage.getItem(settingsKey));
+    if (settings !== null && typeof settings === "object" && allowed.includes(settings[name])) {
+      return settings[name];
+    }
+  } catch (problem) {
+    // unreadable: use the standard value
+  }
+  return standard;
+}
+
+// saveChoice(name, value) saves one word-setting.
+function saveChoice(name, value) {
+  try {
+    let settings = JSON.parse(localStorage.getItem(settingsKey));
+    if (settings === null || typeof settings !== "object" || Array.isArray(settings)) {
+      settings = {};
+    }
+    settings[name] = String(value);
+    localStorage.setItem(settingsKey, JSON.stringify(settings));
+  } catch (problem) {
+    // saving not allowed
+  }
+}

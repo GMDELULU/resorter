@@ -6,6 +6,7 @@
     <title>ReSorter</title>
     <!-- The theme: all colours (theme-liquid.css). Then the look that uses them (style.css). -->
     <link rel="stylesheet" href="theme-liquid.css">
+    <link rel="stylesheet" href="theme-attic.css">
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
@@ -21,12 +22,21 @@
     <!-- The difficulty: a select menu (a drop-down list). Each <option> has a value for the code
          (it must match a name in "difficulties" in game.js) and a text for the player. -->
     <div class="settings">
-      <label for="difficulty">Difficulty</label>
-      <select id="difficulty" class="control-select" autocomplete="off">
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
+      <span class="setting">
+        <label for="difficulty">Difficulty</label>
+        <select id="difficulty" class="control-select" autocomplete="off">
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </span>
+      <span class="setting">
+        <label for="look">Look</label>
+        <select id="look" class="control-select" autocomplete="off">
+          <option value="liquid">Bottles</option>
+          <option value="attic">Attic boxes</option>
+        </select>
+      </span>
     </div>
 
     <!-- The playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
@@ -58,9 +68,10 @@
     </div>
 
     <!-- JavaScript, at the end so the page is loaded first.
-         game.js = the data and rules. save.js = saving in your own browser. draw.js = puts them on the screen. pour.js = the pour animation. sparkle.js = stopper and firework. -->
+         game.js = the data and rules. save.js = saving in your own browser. attic.js = the attic look. draw.js = puts them on the screen. pour.js = the pour animation. sparkle.js = stopper and firework. -->
     <script src="game.js"></script>
     <script src="save.js"></script>
+    <script src="attic.js"></script>
     <script src="draw.js"></script>
     <script src="pour.js"></script>
     <script src="sparkle.js"></script>

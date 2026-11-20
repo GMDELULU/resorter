@@ -1,0 +1,16 @@
+/* ReSorter theme: ATTIC BOXES.
+   The same game, another look: each bottle is an old wooden shelf, each layer is a painted box.
+   The box colours are the same colour numbers as the liquid (so a level looks the same to the rules),
+   and all colours still come from the style guide. Only the extra attic colours are added here.
+   The page gets the class "theme-attic" when the player picks this look (draw.js). */
+
+.theme-attic {
+  --shelf-wood: var(--colour-4);            /* the shelf posts and boards: bone (colour 4, chaos) */
+  --box-tape: var(--restored-colour-4);     /* the tape on the boxes: restored bone */
+}
+
+/* In the restored world, the shelf turns light too. */
+.theme-attic.restored-world {
+  --shelf-wood: var(--restored-colour-4);   /* restored bone */
+  --box-tape: var(--restored-background);
+}

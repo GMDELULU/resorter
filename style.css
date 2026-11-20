@@ -623,3 +623,39 @@ body {
     transition: none;
   }
 }
+
+/* ---------- The attic look (lesson 17, attic.js) ---------- */
+
+/* The wooden posts and boards of a shelf. */
+.shelf-wood {
+  fill: var(--shelf-wood);
+  stroke: none;
+  transition: fill var(--transformation-time);
+}
+
+/* The tape on the boxes. */
+.box-tape {
+  fill: none;
+  stroke: var(--box-tape);
+  stroke-width: 3;
+  opacity: 0.85;
+}
+
+/* A box that is flying over to another shelf. */
+.flying-box {
+  stroke: var(--pencil);
+  stroke-width: 1;
+}
+
+/* The settings row may wrap onto two lines on a small phone. */
+.settings {
+  flex-wrap: wrap;
+}
+
+/* One setting: its name and its menu always stay together on one line. */
+.setting {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
