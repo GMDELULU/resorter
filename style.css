@@ -78,11 +78,42 @@ h1 {
   cursor: pointer;
   touch-action: manipulation;          /* no zoom when you tap twice quickly on a phone */
   -webkit-tap-highlight-color: transparent;   /* no grey flash on a phone tap */
+  transition: transform 0.15s ease-out;      /* lifting and lowering glide in 0.15 seconds */
 }
 
 /* The picked-up bottle lifts up. */
 .bottle-button.selected {
   transform: translateY(-20px);        /* 20 pixels up */
+}
+
+/* A wrong move: the bottle gives a short shake.
+   (Note: while shaking, the lift is not shown. That's fine now, because a lifted bottle never shakes.) */
+.bottle-button.shake {
+  animation: shake 0.4s linear;        /* the "shake" steps below, in 0.4 seconds */
+}
+
+/* The shake steps: from left to right and back, smaller each time, like a firm "no".
+   The percentages are moments in the animation: 0% = start, 100% = end. */
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(-8px) rotate(-3deg); }
+  30%  { transform: translateX(7px) rotate(3deg); }
+  45%  { transform: translateX(-5px) rotate(-2deg); }
+  60%  { transform: translateX(4px) rotate(1deg); }
+  75%  { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+/* Some players turn on "reduce motion" on their phone or computer,
+   because movement makes them feel unwell. Then: no gliding and no shaking.
+   They still see the message under the bottles. */
+@media (prefers-reduced-motion: reduce) {
+  .bottle-button {
+    transition: none;
+  }
+  .bottle-button.shake {
+    animation: none;
+  }
 }
 
 /* Keyboard players see a gold frame around the bottle they are on. */

@@ -28,6 +28,9 @@ let selectedBottle = null;
 // An empty text "" means: no message.
 let message = "";
 
+// The bottle where the last move went wrong (it will shake), or null if nothing went wrong.
+let wrongBottle = null;
+
 // ---------- The pour rule ----------
 
 // topColour(bottle) gives the colour number of the top layer, or null if the bottle is empty.
@@ -76,11 +79,13 @@ function pour(from, to) {
 // The rule for a tap: the player tapped bottle "number".
 function tapBottle(number) {
   message = "";
+  wrongBottle = null;
 
   if (selectedBottle === null) {
     // Nothing picked up yet: pick up this bottle, unless it is empty.
     if (bottles[number].length === 0) {
       message = "That bottle is empty. Pick a bottle with colour in it.";
+      wrongBottle = number;
     } else {
       selectedBottle = number;
     }
@@ -94,6 +99,7 @@ function tapBottle(number) {
       pour(selectedBottle, number);
     } else {
       message = reason;
+      wrongBottle = number;   // the bottle you tried to pour into shakes
     }
     selectedBottle = null;   // after a pour, or a wrong move, the bottle goes back down
   }

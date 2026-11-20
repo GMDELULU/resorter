@@ -258,7 +258,28 @@ function updateScreen() {
   });
   showSelection();
   document.getElementById("message").textContent = message;
+
+  if (wrongBottle !== null) {
+    shake(buttons[wrongBottle]);
+  }
 }
+
+// shake(button) makes one bottle give a short shake. style.css says how a shake looks.
+function shake(button) {
+  // If it is still shaking from a moment ago, stop that first,
+  // so a new wrong move always starts a fresh shake.
+  button.classList.remove("shake");
+  void button.offsetWidth;   // a small trick: makes the browser notice the class was removed
+  button.classList.add("shake");
+}
+
+// When a shake animation has finished, take the class away again.
+// (Only for the "shake" animation: other animations we may add later should not count.)
+document.getElementById("bottles").addEventListener("animationend", function (event) {
+  if (event.animationName === "shake") {
+    event.target.classList.remove("shake");
+  }
+});
 
 // showSelection() lifts the picked-up bottle and puts all the others down.
 // It only changes a class name; style.css decides how "lifted" looks.
