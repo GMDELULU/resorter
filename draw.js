@@ -218,7 +218,10 @@ function makeBottle(bottle, number) {
     const sy = random() * 200;
     shadeStrokes += "M" + round(sx) + " " + round(sy) + " v" + round(6 + random() * 14) + " ";
   }
-  addSvgPart("path", { class: "shade", d: shadeStrokes }, glassContent);
+  // (Shadow and shine go in their own group, so they stay visible while a pour animation
+  // hides the normal liquid and draws its own.)
+  const shading = addSvgPart("g", { "clip-path": "url(#" + stencilName + ")" }, art);
+  addSvgPart("path", { class: "shade", d: shadeStrokes }, shading);
 
   // Shine: a few light strokes down the left side of the glass.
   let shineStrokes = "";
@@ -227,7 +230,7 @@ function makeBottle(bottle, number) {
     const sy = 80 + random() * 90;
     shineStrokes += "M" + round(sx) + " " + round(sy) + " v" + round(12 + random() * 24) + " ";
   }
-  addSvgPart("path", { class: "highlight", d: shineStrokes }, glassContent);
+  addSvgPart("path", { class: "highlight", d: shineStrokes }, shading);
 
   // ---- The glass ----
   // The rim of the fill level: a thin gold line just above where a full bottle's liquid ends.

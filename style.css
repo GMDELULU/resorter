@@ -29,7 +29,6 @@ body {
   background-image:
     radial-gradient(ellipse at center, transparent 45%, #0B0806E6 100%),
     url("background.svg");
-  background-attachment: fixed;   /* the pattern stays still when the page scrolls */
   min-height: 100vh;
   box-sizing: border-box;
   color: #B48C3A;              /* normal text: dark gold (the style guide's halo colour, reused for text) */
@@ -339,13 +338,17 @@ h1 {
   z-index: 0;
   overflow: visible;
 }
-.bottles,
 .controls,
 .message,
 h1,
 p {
   position: relative;
   z-index: 1;
+}
+/* The bottles one step higher, so a bottle flying over to pour stays in front of the text. */
+.bottles {
+  position: relative;
+  z-index: 2;
 }
 /* The sun grows and fades from its own middle. */
 .sunburst {

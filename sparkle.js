@@ -1,4 +1,5 @@
-// ReSorter: the sorted bottle. Its stopper drops on, and one short firework goes off.
+// ReSorter: the special moments. A sorted bottle: its stopper drops on, one short firework
+// goes off, and a gold sun with dark feathers shows behind it. A win: a big sun and a firework.
 // The firework works like Ja's fireworks.html: sparks fly out in random directions,
 // slow down (friction), fall (gravity) and fade away. Following the style guide,
 // the sparks are gold only, and each one is drawn as a short stroke (its trail), not a dot.
