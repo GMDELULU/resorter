@@ -290,6 +290,18 @@ h1 {
 .colour-9 { fill: var(--colour-9); }   /* olive */
 .colour-10 { fill: var(--colour-10); }  /* ash */
 
+/* A sorted bottle shows its liquid in the restored colour: a first glimpse of the world healing. */
+.restored .colour-1 { fill: var(--restored-colour-1); }
+.restored .colour-2 { fill: var(--restored-colour-2); }
+.restored .colour-3 { fill: var(--restored-colour-3); }
+.restored .colour-4 { fill: var(--restored-colour-4); }
+.restored .colour-5 { fill: var(--restored-colour-5); }
+.restored .colour-6 { fill: var(--restored-colour-6); }
+.restored .colour-7 { fill: var(--restored-colour-7); }
+.restored .colour-8 { fill: var(--restored-colour-8); }
+.restored .colour-9 { fill: var(--restored-colour-9); }
+.restored .colour-10 { fill: var(--restored-colour-10); }
+
 /* ---------- Small screens (phones) ----------
    A media query: the rules inside only count when the screen is at most 480 pixels wide
    (a phone held upright), OR at most 500 pixels high (a phone turned sideways).
@@ -413,4 +425,15 @@ p {
 .small-button {
   font-size: 15px;
   opacity: 0.8;
+}
+
+/* The layer for the reveal ripple (sparkle.js): over the whole page, behind the sun and the bottles. */
+.ripple-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
 }

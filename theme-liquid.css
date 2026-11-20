@@ -41,4 +41,11 @@
   --restored-colour-8: #3CC2D6;
   --restored-colour-9: #A8C24A;
   --restored-colour-10: #A9B4C2;
+
+  /* ---------- Special moments: the reveal ripple when a bottle is sorted ---------- */
+  --ripple-background: #FBF5E6;   /* the restored world seen inside the ripple */
+  --ripple-runes: #C98A1E;        /* rune marks inside the ripple */
+  --ripple-edge: #F7C948;         /* the thin bright outer edge of the ripple */
+  --ripple-glow: #E8D5A8;         /* soft warm glow instead of the ripple, for less motion */
+  --sparkle-white: #FFFFFF;       /* white sparkles riding on the ripple edge */
 }

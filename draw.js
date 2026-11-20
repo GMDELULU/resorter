@@ -117,7 +117,7 @@ function makeBottle(bottle, number) {
 
   // The picture. viewBox: the drawing area, with a margin on every side.
   const picture = addSvgPart("svg", {
-    class: "bottle",
+    class: isClosed(bottle) ? "bottle restored" : "bottle",   // sorted: restored colours (style.css)
     viewBox: (-drawMargin) + " " + (-drawMargin) + " " + drawWidth + " " + drawHeight,
     width: drawWidth,
     height: drawHeight
@@ -309,6 +309,9 @@ function drawBottles() {
         }
       } else {
         updateScreen();          // the look: show what changed, at once
+        if (lastPour !== null && lastPour.closes) {
+          softGlow(button);      // less motion: a soft warm glow instead of the ripple (sparkle.js)
+        }
       }
     });
 
