@@ -62,6 +62,27 @@ h1 {
   filter: drop-shadow(0 8px 10px #E2B24A40);   /* soft gold glow (gold, a quarter visible) */
 }
 
+/* The button around each bottle: no grey button look, only the drawing itself. */
+.bottle-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;          /* no zoom when you tap twice quickly on a phone */
+  -webkit-tap-highlight-color: transparent;   /* no grey flash on a phone tap */
+}
+
+/* The picked-up bottle lifts up. */
+.bottle-button.selected {
+  transform: translateY(-20px);        /* 20 pixels up */
+}
+
+/* Keyboard players see a gold frame around the bottle they are on. */
+.bottle-button:focus-visible {
+  outline: 2px solid #E2B24A;          /* gold outline */
+  outline-offset: 4px;
+}
+
 /* ---- The parts of the drawing. draw.js gives every part one of these class names. ---- */
 
 /* The dark glass */

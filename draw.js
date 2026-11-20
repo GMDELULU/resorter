@@ -179,12 +179,83 @@ function makeBottle(bottle, number) {
 // ---------- Drawing all bottles ----------
 
 // drawBottles() empties the playing field and draws every bottle again from the data.
+// Every bottle sits inside a button, so it can be tapped, clicked, or chosen with the keyboard.
 function drawBottles() {
   const field = document.getElementById("bottles");
   field.replaceChildren();
 
   bottles.forEach(function (bottle, number) {
-    field.appendChild(makeBottle(bottle, number));
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "bottle-button";
+    button.setAttribute("aria-label", "Bottle " + (number + 1));   // a name for screen readers
+    button.appendChild(makeBottle(bottle, number));
+
+    // An event listener: "when this button is clicked, do these steps".
+    // "click" works the same for a mouse click, a finger tap and the Enter or Space key.
+    button.addEventListener("click", function () {
+      tapBottle(number);         // the rule: what a tap means (in game.js)
+      showSelection();           // the look: lift the right bottle
+      moveKeyboardTo(number, false);   // the keyboard continues from the tapped bottle
+    });
+
+    field.appendChild(button);
+  });
+
+  showSelection();
+  moveKeyboardTo(keyboardBottle, false);
+}
+
+// ---------- Keyboard ----------
+// Tab enters the playing field once (on one bottle) and leaves it with the next Tab.
+// Inside the field, the arrow keys move from bottle to bottle, and go round:
+// after the last bottle comes the first one again.
+
+// Which bottle the keyboard is on: 0 = bottle 1.
+let keyboardBottle = 0;
+
+// moveKeyboardTo(number, alsoFocus) makes "number" the only bottle that Tab can reach.
+// tabIndex 0 = Tab can reach it; tabIndex -1 = Tab skips it.
+function moveKeyboardTo(number, alsoFocus) {
+  const buttons = document.querySelectorAll(".bottle-button");
+  keyboardBottle = number;
+  buttons.forEach(function (button, place) {
+    button.tabIndex = (place === number) ? 0 : -1;
+  });
+  if (alsoFocus) {
+    buttons[number].focus();
+  }
+}
+
+// One listener for the whole playing field: it reacts to the arrow keys.
+document.getElementById("bottles").addEventListener("keydown", function (event) {
+  const count = bottles.length;
+  let next = null;
+
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    next = (keyboardBottle + 1) % count;           // % count: after the last, back to the first
+  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    next = (keyboardBottle - 1 + count) % count;   // before the first, round to the last
+  } else if (event.key === "Home") {
+    next = 0;
+  } else if (event.key === "End") {
+    next = count - 1;
+  }
+
+  if (next !== null) {
+    event.preventDefault();   // stop the arrow key from scrolling the page
+    moveKeyboardTo(next, true);
+  }
+});
+
+// showSelection() lifts the picked-up bottle and puts all the others down.
+// It only changes a class name; style.css decides how "lifted" looks.
+function showSelection() {
+  const buttons = document.querySelectorAll(".bottle-button");
+  buttons.forEach(function (button, number) {
+    const isPickedUp = (number === selectedBottle);
+    button.classList.toggle("selected", isPickedUp);
+    button.setAttribute("aria-pressed", isPickedUp);   // tells screen readers it is picked up
   });
 }
 

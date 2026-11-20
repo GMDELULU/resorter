@@ -19,3 +19,18 @@ let bottles = [
   [],
   []
 ];
+
+// Which bottle is picked up: its number (0 = bottle 1, 1 = bottle 2...),
+// or null when no bottle is picked up. "null" means "nothing".
+let selectedBottle = null;
+
+// The rule for a tap: the player tapped bottle "number".
+function tapBottle(number) {
+  if (selectedBottle === number) {
+    // Tapping the picked-up bottle again puts it back down.
+    selectedBottle = null;
+  } else {
+    // Otherwise, pick up this bottle. (In lesson 7 this becomes: pour into it.)
+    selectedBottle = number;
+  }
+}
