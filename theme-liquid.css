@@ -24,6 +24,10 @@
   --colour-9: #5A5A22;        /* olive */
   --colour-10: #3A3F48;       /* ash */
 
+  /* Text colours (names for what text is used for, so the restored world can swap them). */
+  --text: var(--halo);           /* normal text: dark gold */
+  --text-strong: var(--gold);    /* headings, buttons, messages: bright gold */
+
   /* ---------- The restored world (Systa and Metice): how a level ends ---------- */
   --restored-background: #F3EBDD;
   --restored-pencil: #3A2A14;
@@ -48,4 +52,16 @@
   --ripple-edge: #F7C948;         /* the thin bright outer edge of the ripple */
   --ripple-glow: #E8D5A8;         /* soft warm glow instead of the ripple, for less motion */
   --sparkle-white: #FFFFFF;       /* white sparkles riding on the ripple edge */
+}
+
+/* ---------- The restored world: after a win (the win transformation, lesson 15b) ----------
+   When the page gets the class "restored-world", the chaos names point at the restored colours.
+   Everything that uses these names changes with it (smoothly, see style.css). */
+.restored-world {
+  --background: var(--restored-background);
+  --pencil: var(--restored-pencil);
+  --gold: var(--restored-gold);
+  --halo: var(--restored-halo);
+  --text: var(--restored-pencil);          /* brown text: readable on the light background */
+  --text-strong: var(--restored-pencil);
 }

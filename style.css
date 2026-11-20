@@ -31,7 +31,7 @@ body {
     url("background.svg");
   min-height: 100vh;
   box-sizing: border-box;
-  color: var(--halo);              /* normal text: dark gold (the style guide's halo colour, reused for text) */
+  color: var(--text);              /* normal text (theme: dark gold in chaos, brown when restored) */
   font-family: "Jaro", Georgia, serif;   /* chaos text font; Georgia only if it fails to load */
   font-size: 20px;
   text-align: center;
@@ -41,7 +41,7 @@ body {
 
 /* The big heading */
 h1 {
-  color: var(--gold);              /* bright gold (outline colour) */
+  color: var(--text-strong);       /* headings (theme: bright gold in chaos, brown when restored) */
   font-family: "Syne Tactile", Georgia, serif;   /* chaos font; Georgia only if it fails to load */
   font-size: 40px;
   letter-spacing: 2px;
@@ -66,9 +66,9 @@ h1 {
   padding: 8px 16px;
   font-family: "Jaro", Georgia, serif;
   font-size: 20px;
-  color: var(--gold);                       /* gold */
-  background-color: var(--background);            /* chaos background */
-  border: 2px solid var(--gold);            /* gold outline */
+  color: var(--text-strong);                /* button text */
+  background-color: var(--background);            /* the background colour of the world */
+  border: 2px solid var(--gold);            /* gold outline (restored gold after a win) */
   border-radius: 0;                     /* square corners */
   box-shadow: 3px 3px 0 var(--halo);        /* the second, dark-gold line */
   cursor: pointer;
@@ -82,7 +82,7 @@ h1 {
 }
 
 .control-button:focus-visible {
-  outline: 2px solid var(--restored-halo);           /* light gold frame for keyboard players */
+  outline: 2px solid var(--text-strong);    /* frame for keyboard players (visible in both worlds) */
   outline-offset: 4px;
 }
 
@@ -102,16 +102,16 @@ h1 {
   padding: 6px 12px;
   font-family: "Jaro", Georgia, serif;
   font-size: 18px;
-  color: var(--gold);                       /* gold */
-  background-color: var(--background);            /* chaos background */
-  border: 2px solid var(--gold);            /* gold outline */
+  color: var(--text-strong);                /* menu text */
+  background-color: var(--background);            /* the background colour of the world */
+  border: 2px solid var(--gold);            /* gold outline (restored gold after a win) */
   border-radius: 0;                     /* square corners */
   box-shadow: 3px 3px 0 var(--halo);        /* the second, dark-gold line */
   cursor: pointer;
 }
 
 .control-select:focus-visible {
-  outline: 2px solid var(--restored-halo);           /* light gold frame for keyboard players */
+  outline: 2px solid var(--text-strong);    /* frame for keyboard players (visible in both worlds) */
   outline-offset: 4px;
 }
 
@@ -147,14 +147,14 @@ h1 {
 .message {
   min-height: 1.5em;
   margin-top: 24px;
-  color: var(--gold);              /* bright gold */
+  color: var(--text-strong);       /* messages */
 }
 
 /* The win message: big, in the restored-world heading font, a first glimpse of the world healing. */
 .message.win {
   font-family: "Pompiere", Georgia, serif;
   font-size: 36px;
-  color: var(--restored-halo);              /* restored halo colour: light gold */
+  color: var(--text-strong);       /* the win message */
 }
 
 /* The button around each bottle: no grey button look, only the drawing itself. */
@@ -411,7 +411,7 @@ p {
 .stats {
   margin: 4px 0 0;
   font-size: 16px;
-  color: var(--halo);              /* dark gold */
+  color: var(--text);              /* counter */
 }
 
 /* The Reset progress button sits at the bottom, away from the game buttons. */
@@ -436,4 +436,84 @@ p {
   height: 100%;
   pointer-events: none;
   z-index: 0;
+}
+
+/* ---------- The win transformation (lesson 15b) ----------
+   When the level is won, the page gets the class "restored-world" (sparkle.js). The theme then
+   points every colour name at its restored colour, and these transitions make it change smoothly. */
+
+/* How long the change from chaos to restored takes. */
+:root {
+  --transformation-time: 2s;
+}
+
+body,
+h1,
+.control-button,
+.control-select,
+.message,
+.stats {
+  transition: color var(--transformation-time), background-color var(--transformation-time),
+              border-color var(--transformation-time), box-shadow var(--transformation-time);
+}
+
+.glass,
+.outline,
+.outline-inner,
+.outline-dark,
+.rim,
+.layer-line,
+.surface,
+.stopper-body,
+.hatch-dark,
+.hatch-light,
+.shade,
+.highlight,
+.ember {
+  transition: fill var(--transformation-time), stroke var(--transformation-time),
+              opacity var(--transformation-time);
+}
+
+/* The restored background: a light layer with restored rune marks, behind everything.
+   It is always there, but invisible; in the restored world it fades in. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background-color: var(--restored-background);
+  background-image: url("background-restored.svg");
+  opacity: 0;
+  transition: opacity var(--transformation-time);
+  pointer-events: none;
+}
+.restored-world::before {
+  opacity: 1;
+}
+
+/* Kharosa's dark strokes fade away in the restored world. */
+.restored-world .hatch-dark,
+.restored-world .shade,
+.restored-world .layer-line {
+  opacity: 0.12;
+}
+
+/* Halfway through, the fonts change to the restored fonts (sparkle.js adds "restored-fonts"). */
+.restored-fonts,
+.restored-fonts .control-button,
+.restored-fonts .control-select {
+  font-family: "Josefin Sans", Georgia, serif;
+}
+.restored-fonts h1 {
+  font-family: "Pompiere", Georgia, serif;
+}
+
+/* Players who asked for less motion: the change happens at once, without sliding colours. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transformation-time: 0s;
+  }
 }

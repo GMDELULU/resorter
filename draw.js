@@ -90,7 +90,7 @@ function pencilLine(points, wobble, random, closed) {
 // themeColour(name) reads a colour from the theme file (theme-liquid.css), for example
 // themeColour("--gold"). We need it where JavaScript sets a colour itself.
 function themeColour(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return getComputedStyle(document.body).getPropertyValue(name).trim();   // (body: so it follows the restored world too)
 }
 
 // pointsText(points) turns [[1, 2], [3, 4]] into "1,2 3,4", the way SVG wants corner points.
@@ -396,10 +396,12 @@ function updateScreen() {
   // Not won (any more, for example after Undo): stop a waiting timer.
   if (won && newLevelTimer === null) {
     newLevelTimer = setTimeout(startNextLevel, newLevelDelay);
-    celebrateWin();   // the big sunburst (sparkle.js)
+    celebrateWin();          // the big sunburst (sparkle.js)
+    startTransformation();   // the world turns from chaos to restored (sparkle.js)
   } else if (!won && newLevelTimer !== null) {
     clearTimeout(newLevelTimer);
     newLevelTimer = null;
+    endTransformation();     // not won any more: back to chaos
   }
 }
 
@@ -419,8 +421,9 @@ function showStats() {
 
 // ---------- The next level ----------
 
-// How long to wait after a win before the new level starts (in milliseconds: 4000 = 4 seconds).
-const newLevelDelay = 4000;
+// How long to wait after a win before the new level starts (in milliseconds: 5000 = 5 seconds:
+// 2 seconds for the win transformation, then 3 seconds to enjoy the restored world).
+const newLevelDelay = 5000;
 
 // The timer that will start the new level, or null if none is waiting.
 let newLevelTimer = null;
@@ -439,6 +442,7 @@ function startNextLevel() {
   // Was the keyboard on a bottle? Then put it back on bottle 1 of the new level.
   const keyboardWasOnBottle = document.activeElement !== null &&
                               document.activeElement.classList.contains("bottle-button");
+  endTransformation();   // the new level starts in the chaos world again
   newLevel();          // the rule side (game.js)
   keyboardBottle = 0;  // the keyboard starts at bottle 1 again
   drawBottles();       // new buttons: the number of bottles can change

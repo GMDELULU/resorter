@@ -376,3 +376,25 @@ function makeRunePattern(id, colour, defs) {
   }
   addSvgPart("path", { d: marks, fill: "none", stroke: colour, "stroke-width": 1, opacity: 0.55 }, pattern);
 }
+
+// ---------- The win transformation: from chaos to restored ----------
+// The whole page changes colour (see theme-liquid.css: .restored-world, and style.css).
+// Halfway through, the fonts change too. A new level goes back to the chaos world.
+
+let fontTimer = null;
+
+// startTransformation() turns the world from chaos to restored.
+function startTransformation() {
+  document.body.classList.add("restored-world");
+  const time = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--transformation-time")) || 0;
+  clearTimeout(fontTimer);
+  fontTimer = setTimeout(function () {
+    document.body.classList.add("restored-fonts");   // halfway: the restored fonts
+  }, time * 1000 / 2);
+}
+
+// endTransformation() goes back to the chaos world (for a new level, or after Undo).
+function endTransformation() {
+  clearTimeout(fontTimer);
+  document.body.classList.remove("restored-world", "restored-fonts");
+}
