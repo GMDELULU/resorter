@@ -49,7 +49,7 @@ h1 {
   flex-wrap: wrap;
   justify-content: center;     /* keep the bottles in the middle */
   gap: 32px 24px;              /* space between rows, space between bottles */
-  max-width: 600px;
+  max-width: 720px;            /* wide enough for 7 bottles in one row on a laptop */
   margin: 40px auto 0;         /* space above, and centred on the page */
 }
 
@@ -178,3 +178,31 @@ h1 {
 .colour-2 { fill: #651722; }   /* crimson */
 .colour-3 { fill: #2A5246; }   /* verdigris */
 .colour-4 { fill: #7E7360; }   /* bone */
+
+/* ---------- Small screens (phones) ----------
+   A media query: the rules inside only count when the screen is at most 480 pixels wide
+   (a phone held upright), OR at most 500 pixels high (a phone turned sideways).
+   Then the bottles get a bit smaller and closer together, so 7 bottles need fewer rows
+   and everything, including the message, fits on the screen. */
+@media (max-width: 480px), (max-height: 500px) {
+  body {
+    padding: 16px 12px;
+  }
+
+  h1 {
+    font-size: 30px;
+    margin: 8px 0;
+  }
+
+  .bottles {
+    gap: 28px 12px;            /* space between rows, space between bottles */
+    margin-top: 28px;
+  }
+
+  /* 60 x 173 pixels: the same shape as 72 x 208, just smaller.
+     The style guide says a bottle must still be clear at 60 pixels wide. */
+  .bottle {
+    width: 60px;
+    height: 173px;
+  }
+}
