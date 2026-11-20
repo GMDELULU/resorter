@@ -92,12 +92,12 @@ h1 {
   margin: 40px auto 0;         /* space above, and centred on the page */
 }
 
-/* One bottle. draw.js draws it as an SVG picture: 72 x 208 pixels,
+/* One bottle. draw.js draws it as an SVG picture: 64 x 216 pixels,
    the bottle itself plus a little room around it for the pencil lines. */
 .bottle {
   display: block;
-  width: 72px;
-  height: 208px;
+  width: 64px;
+  height: 216px;
   filter: drop-shadow(0 8px 10px #E2B24A40);   /* soft gold glow (gold, a quarter visible) */
   overflow: visible;           /* the stopper may poke out above the drawing area */
 }
@@ -216,6 +216,31 @@ h1 {
   opacity: 0.8;
 }
 
+/* The inner gold line of the double outline: thinner and a bit softer than the outer one. */
+.outline-inner {
+  fill: none;
+  stroke: #E2B24A;             /* gold outline */
+  stroke-width: 0.7;
+  stroke-linejoin: miter;
+  opacity: 0.65;
+}
+
+/* The rim of the fill level: a thin gold line across the glass, just above a full bottle's liquid. */
+.rim {
+  fill: none;
+  stroke: #E2B24A;             /* gold outline */
+  stroke-width: 0.8;
+  opacity: 0.7;
+}
+
+/* The thin darker line between two layers of colour. */
+.layer-line {
+  fill: none;
+  stroke: #090705;             /* pencil lines */
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
 /* The layer colours: the game only says "colour 1, 2, 3...".
    Here we decide what each colour looks like (chaos colours from the style guide).
    "fill" is the paint colour inside an SVG shape. */
@@ -244,11 +269,11 @@ h1 {
     margin-top: 28px;
   }
 
-  /* 60 x 173 pixels: the same shape as 72 x 208, just smaller.
-     The style guide says a bottle must still be clear at 60 pixels wide. */
+  /* 60 x 202 pixels: the same shape as 64 x 216, just a little smaller.
+     The style guide says a bottle must still be clear at about 60 pixels wide. */
   .bottle {
     width: 60px;
-    height: 173px;
+    height: 202px;
   }
 }
 

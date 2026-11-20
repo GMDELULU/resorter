@@ -12,14 +12,30 @@ const strokesPerLayer = 25;
 
 // ---------- The bottle shape (do not change, unless you redraw the bottle) ----------
 
-// The corner points of the bottle, as [left-right, top-down] in pixels:
-// neck top, neck bottom, shoulder, body, cut-off bottom corners.
+// The corner points of the bottle, as [left-right, top-down] in drawing units:
+// a long narrow neck, cut-off (chamfered) shoulders, a tall body and cut-off bottom corners.
 const bottleShape = [
-  [20, 0], [44, 0], [44, 40], [64, 64], [64, 188],
-  [52, 200], [12, 200], [0, 188], [0, 64], [20, 40]
+  [19, 0], [37, 0], [37, 48], [56, 70], [56, 196],
+  [46, 208], [10, 208], [0, 196], [0, 70], [19, 48]
 ];
-const bottleBottom = 200;   // the lowest point of the bottle
-const liquidHeight = 120;   // room for liquid; it is shared by all layers
+// The inner gold line: the same shape, 3 units further in. Together they make a double outline.
+const innerLine = [
+  [22, 3], [34, 3], [34, 49], [53, 71], [53, 195],
+  [45, 205], [11, 205], [3, 195], [3, 71], [22, 49]
+];
+// Where liquid can be: 6 units in from the outside, so a thin dark gap shows along the glass.
+const liquidShape = [
+  [25, 6], [31, 6], [31, 50], [50, 72], [50, 194],
+  [43, 202], [13, 202], [6, 194], [6, 72], [25, 50]
+];
+const bottleWidth = 56;     // from left to right
+const bottleBottom = 202;   // the lowest point the liquid can reach
+const liquidHeight = 116;   // room for liquid; it is shared by all layers
+
+// The drawing area around the bottle: 4 units of extra room on every side for the pencil lines.
+const drawMargin = 4;
+const drawWidth = bottleWidth + 2 * drawMargin;   // 64
+const drawHeight = 208 + 2 * drawMargin;          // 216
 
 // SVG pictures need this "address" so the browser knows they are SVG. It is a name, not a website.
 const svgNamespace = "http://www.w3.org/2000/svg";
@@ -71,110 +87,140 @@ function pencilLine(points, wobble, random, closed) {
   return instructions;
 }
 
+// pointsText(points) turns [[1, 2], [3, 4]] into "1,2 3,4", the way SVG wants corner points.
+function pointsText(points) {
+  return points.map(function (point) { return round(point[0]) + "," + round(point[1]); }).join(" ");
+}
+
+// wavyEdge(y, random) gives the points of a slightly uneven line across the bottle at height y,
+// like the top of a liquid that is never ruler-straight.
+function wavyEdge(y, random) {
+  const points = [];
+  for (let x = 0; x <= bottleWidth; x = x + 7) {
+    points.push([x, y + (random() - 0.5) * 2.4]);
+  }
+  return points;
+}
+
 // ---------- Drawing one bottle ----------
 
 // makeBottle(bottle, number) draws one bottle from its list of colours (bottom to top).
 // "number" is the bottle's place in the list: 0, 1, 2...
 function makeBottle(bottle, number) {
   const random = makeRandom(1000 + number * 7919);   // every bottle has its own dice
-  const shapePoints = bottleShape.map(function (point) { return point.join(","); }).join(" ");
 
-  // The picture. viewBox: the drawing area, with 4 pixels of extra room on every side.
+  // The picture. viewBox: the drawing area, with a margin on every side.
   const picture = addSvgPart("svg", {
     class: "bottle",
-    viewBox: "-4 -4 72 208",
-    width: 72,
-    height: 208
+    viewBox: (-drawMargin) + " " + (-drawMargin) + " " + drawWidth + " " + drawHeight,
+    width: drawWidth,
+    height: drawHeight
   });
 
-  // A stencil in the shape of the bottle: everything inside "glassContent" is cut to this shape.
+  // A stencil in the shape of the liquid space: everything inside "glassContent" is cut to it.
   const stencilName = "bottle-stencil-" + number;
   const stencil = addSvgPart("clipPath", { id: stencilName }, picture);
-  addSvgPart("polygon", { points: shapePoints }, stencil);
+  addSvgPart("polygon", { points: pointsText(liquidShape) }, stencil);
 
   // Everything you see goes in one group, "art", so the ripple effect can move it all together.
   const art = addSvgPart("g", { class: "bottle-art" }, picture);
 
   // The dark glass.
-  addSvgPart("polygon", { class: "glass", points: shapePoints }, art);
+  addSvgPart("polygon", { class: "glass", points: pointsText(bottleShape) }, art);
 
   const glassContent = addSvgPart("g", { class: "glass-content", "clip-path": "url(#" + stencilName + ")" }, art);
 
-  // The layers, from the bottom up. Each one gets a block of colour and pencil strokes.
+  // ---- The liquid ----
+  // Every border between layers is a slightly wavy line. The bottom border is far below the
+  // bottle (the stencil cuts it off). Each border has its own dice, so it keeps its shape.
   const layerHeight = liquidHeight / capacity;
+  const borders = [[[0, bottleBottom + 10], [bottleWidth, bottleBottom + 10]]];
+  bottle.forEach(function (colour, place) {
+    const borderRandom = makeRandom(3000 + number * 7919 + (place + 1) * 104729);
+    borders.push(wavyEdge(bottleBottom - (place + 1) * layerHeight, borderRandom));
+  });
+
   let darkStrokes = "";
   let lightStrokes = "";
-
+  let scribbles = "";
   bottle.forEach(function (colour, place) {
     const layerTop = bottleBottom - (place + 1) * layerHeight;
     // Every layer place has its own dice, so after a pour the other layers keep their strokes.
     const layerRandom = makeRandom(1000 + number * 7919 + (place + 1) * 104729);
 
-    addSvgPart("rect", {
-      class: "colour-" + colour,
-      x: 0,
-      y: round(layerTop),
-      width: 64,
-      height: round(layerHeight + 0.5)   // + 0.5 so no thin gap shows between layers
-    }, glassContent);
+    // The colour: between the border below and the (wavy) border above.
+    const shape = borders[place].slice().reverse().concat(borders[place + 1]);
+    addSvgPart("polygon", { class: "colour-" + colour, points: pointsText(shape) }, glassContent);
 
-    // Short diagonal strokes, at random places in this layer. Most dark, some light.
-    // Each stroke goes up and to the right, so it starts low enough to stay inside the liquid.
+    // Fine diagonal strokes, like rain. Most darker, some lighter than the colour.
     for (let count = 0; count < strokesPerLayer; count++) {
-      const length = 4 + layerRandom() * 6;
-      const rise = length * 0.85;
-      const x = layerRandom() * 64;
+      const length = 5 + layerRandom() * 7;
+      const rise = length * 0.92;
+      const x = layerRandom() * bottleWidth;
       const y = layerTop + rise + layerRandom() * (layerHeight - rise);
       const stroke = "M" + round(x) + " " + round(y) +
-                     " l" + round(length * 0.5) + " " + round(-rise) + " ";
+                     " l" + round(length * 0.38) + " " + round(-rise) + " ";
       if (layerRandom() < 0.6) {
         darkStrokes += stroke;
       } else {
         lightStrokes += stroke;
       }
     }
+
+    // A little scribble: a short zigzag somewhere in the layer.
+    let x = 8 + layerRandom() * (bottleWidth - 24);
+    const y = layerTop + 6 + layerRandom() * (layerHeight - 10);
+    scribbles += "M" + round(x) + " " + round(y);
+    for (let zig = 0; zig < 4; zig++) {
+      x = x + 2 + layerRandom() * 2;
+      scribbles += " L" + round(x) + " " + round(y + (zig % 2 === 0 ? -2 : 2));
+    }
+    scribbles += " ";
   });
 
   addSvgPart("path", { class: "hatch-dark", d: darkStrokes }, glassContent);
   addSvgPart("path", { class: "hatch-light", d: lightStrokes }, glassContent);
+  addSvgPart("path", { class: "hatch-dark", d: scribbles }, glassContent);
 
-  // The top of the liquid: a light, wobbly line (only if the bottle is not empty).
-  if (bottle.length > 0) {
-    const surface = bottleBottom - bottle.length * layerHeight;
+  // A thin darker line on every border between two layers, and a light line on top of the liquid.
+  borders.slice(1).forEach(function (border, place) {
+    const isTop = (place === bottle.length - 1);
     addSvgPart("path", {
-      class: "surface",
-      d: pencilLine([[0, surface], [22, surface], [44, surface], [64, surface]], 0.6,
-                    makeRandom(5000 + number * 7919), false)
+      class: isTop ? "surface" : "layer-line",
+      d: pencilLine(border, 0, random, false)
     }, glassContent);
-  }
+  });
 
   // Shadow: many short dark strokes down the right side of the glass.
   let shadeStrokes = "";
   for (let count = 0; count < 40; count++) {
-    const x = 50 + random() * 14;
-    const y = random() * 200;
-    shadeStrokes += "M" + round(x) + " " + round(y) + " v" + round(6 + random() * 14) + " ";
+    const sx = bottleWidth - 12 + random() * 12;
+    const sy = random() * 200;
+    shadeStrokes += "M" + round(sx) + " " + round(sy) + " v" + round(6 + random() * 14) + " ";
   }
   addSvgPart("path", { class: "shade", d: shadeStrokes }, glassContent);
 
   // Shine: a few light strokes down the left side of the glass.
   let shineStrokes = "";
   for (let count = 0; count < 6; count++) {
-    const x = 6 + random() * 4;
-    const y = 72 + random() * 90;
-    shineStrokes += "M" + round(x) + " " + round(y) + " v" + round(12 + random() * 24) + " ";
+    const sx = 8 + random() * 4;
+    const sy = 80 + random() * 90;
+    shineStrokes += "M" + round(sx) + " " + round(sy) + " v" + round(12 + random() * 24) + " ";
   }
   addSvgPart("path", { class: "highlight", d: shineStrokes }, glassContent);
 
-  // The outline: one thick dark line, then three thin, slightly crooked gold lines.
-  addSvgPart("path", { class: "outline-dark", d: pencilLine(bottleShape, 0, random, true) }, art);
-  for (let count = 0; count < 3; count++) {
-    addSvgPart("path", { class: "outline", d: pencilLine(bottleShape, 0.9, random, true) }, art);
-  }
+  // ---- The glass ----
+  // The rim of the fill level: a thin gold line just above where a full bottle's liquid ends.
+  const rimY = bottleBottom - liquidHeight - 3;
+  addSvgPart("path", { class: "rim", d: pencilLine([[4, rimY], [bottleWidth - 4, rimY]], 0.4, random, false) }, art);
 
-  // Two thin gold lines under the shoulder, like in the reference drawing.
-  addSvgPart("path", { class: "outline", d: pencilLine([[2, 70], [62, 70]], 0.5, random, false) }, art);
-  addSvgPart("path", { class: "highlight", d: pencilLine([[2, 74], [62, 74]], 0.5, random, false) }, art);
+  // The double outline: a dark line under everything, then the outer gold line (drawn twice,
+  // a little crooked, like a pencil going over it again) and the inner gold line.
+  addSvgPart("path", { class: "outline-dark", d: pencilLine(bottleShape, 0, random, true) }, art);
+  for (let count = 0; count < 2; count++) {
+    addSvgPart("path", { class: "outline", d: pencilLine(bottleShape, 0.7, random, true) }, art);
+  }
+  addSvgPart("path", { class: "outline-inner", d: pencilLine(innerLine, 0.5, random, true) }, art);
 
   // A sorted, closed bottle gets its gold stopper: the pentagon from the reference drawing.
   if (isClosed(bottle)) {
@@ -184,22 +230,23 @@ function makeBottle(bottle, number) {
   return picture;
 }
 
-// The stopper's corner points: a pentagon sitting on the neck (it pokes out above the bottle).
-const stopperShape = [[32, -22], [46, -10], [41, 4], [23, 4], [18, -10]];
+// The stopper's corner points: a small pentagon gem sitting on the neck (it pokes out above it).
+const stopperShape = [[28, -20], [40, -9], [36, 4], [20, 4], [16, -9]];
+const stopperMiddle = [28, -6];
 
 // addStopper(art, random) draws the stopper in pencil style: a dark fill, a sketchy gold outline,
-// and thin lines from the middle to every corner, like the cut faces of a gem.
+// and faint lines from the middle to every corner, like the cut faces of a gem.
 function addStopper(art, random) {
   const stopper = addSvgPart("g", { class: "stopper" }, art);
-  const points = stopperShape.map(function (point) { return point.join(","); }).join(" ");
-  addSvgPart("polygon", { class: "stopper-body", points: points }, stopper);
+  addSvgPart("polygon", { class: "stopper-body", points: pointsText(stopperShape) }, stopper);
   stopperShape.forEach(function (corner) {
-    addSvgPart("path", { class: "highlight", d: pencilLine([[32, -8], corner], 0.4, random, false) }, stopper);
+    addSvgPart("path", { class: "highlight", d: pencilLine([stopperMiddle, corner], 0.4, random, false) }, stopper);
   });
   for (let count = 0; count < 2; count++) {
-    addSvgPart("path", { class: "outline", d: pencilLine(stopperShape, 0.6, random, true) }, stopper);
+    addSvgPart("path", { class: "outline", d: pencilLine(stopperShape, 0.5, random, true) }, stopper);
   }
 }
+
 
 // ---------- Drawing all bottles ----------
 

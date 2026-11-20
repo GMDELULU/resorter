@@ -94,14 +94,14 @@ async function showPour(info, source, target) {
   source.style.transform = "translate(0px, " + liftNow + "px)";
   const s = source.getBoundingClientRect();
   const t = target.getBoundingClientRect();
-  const size = s.height / 208;        // 1 on a laptop; smaller on a phone
+  const size = s.height / drawHeight; // 1 on a laptop; smaller on a phone
   const homeTop = s.top - liftNow;    // where the bottle's top is when it stands in its place
 
   // The point to rotate around is the middle of the bottle.
-  // The mouth is 100 drawing-units above the middle.
+  // The mouth is (drawHeight / 2 - drawMargin) drawing-units above the middle.
   const sourceMiddleX = s.left + s.width / 2;
   const sourceMiddleY = homeTop + s.height / 2;
-  const mouthDistance = 100 * size;
+  const mouthDistance = (drawHeight / 2 - drawMargin) * size;
 
   // Tip towards the side with the most room on the screen.
   const targetMiddleX = t.left + t.width / 2;
@@ -193,7 +193,7 @@ async function showPour(info, source, target) {
 
         // The stream: it grows down from the mouth at the start, and its tail falls in at the end.
         if (progress > 0 && progress < 1) {
-          const surfaceY = t.top + (bottleBottom - (info.layersBefore + poured) * layerHeight + 4) * size;
+          const surfaceY = t.top + (bottleBottom - (info.layersBefore + poured) * layerHeight + drawMargin) * size;
           const fullLength = Math.max(0, surfaceY - mouthY);
           const head = fullLength * Math.min(1, progress / 0.15);
           const tail = fullLength * Math.max(0, (progress - 0.9) / 0.1);
@@ -228,7 +228,7 @@ async function showPour(info, source, target) {
 }
 
 // ---------- Live liquid: level like real water ----------
-// How it works: the bottle shape is a list of corner points (bottleShape in draw.js).
+// How it works: the space for liquid is a list of corner points (liquidShape in draw.js).
 // For an amount of liquid we know how much AREA it takes up when the bottle stands upright.
 // When the bottle is tipped, we search the water line (a straight, level line) that cuts off
 // exactly that much area at the bottom side. That is where the liquid surface must be.
@@ -288,18 +288,18 @@ function shapeArea(points) {
 // areaOfLayers(amount): the area that "amount" layers take up in an upright bottle.
 function areaOfLayers(amount) {
   const layerHeight = liquidHeight / capacity;
-  return shapeArea(cutShape(bottleShape, [0, 1], bottleBottom - amount * layerHeight, true));
+  return shapeArea(cutShape(liquidShape, [0, 1], bottleBottom - amount * layerHeight, true));
 }
 
 // waterLine(wantedArea, down) searches the level line that has exactly wantedArea below it.
 // It halves the search range again and again (like guessing a number: "higher? lower?").
 function waterLine(wantedArea, down) {
-  const depths = bottleShape.map(function (point) { return depthOf(point, down); });
+  const depths = liquidShape.map(function (point) { return depthOf(point, down); });
   let high = Math.min(...depths);   // the highest point of the bottle
   let low = Math.max(...depths);    // the lowest point of the bottle
   for (let i = 0; i < 30; i++) {
     const middle = (high + low) / 2;
-    if (shapeArea(cutShape(bottleShape, down, middle, true)) > wantedArea) {
+    if (shapeArea(cutShape(liquidShape, down, middle, true)) > wantedArea) {
       high = middle;   // too much liquid below this line: the line must go lower
     } else {
       low = middle;
@@ -333,7 +333,7 @@ function drawLiveLiquid(group, colours, amount, angle, waveHeight, wavePhase) {
 
   // 2. The top layer: everything below a wavy surface. It is drawn bigger than the bottle;
   //    the bottle's stencil cuts it to the right shape.
-  const centre = [32, 100];
+  const centre = [bottleWidth / 2, 104];   // about the middle of the bottle
   const centreDepth = depthOf(centre, down);
   const surface = [];
   for (let s = -130; s <= 130; s = s + 4) {
@@ -350,7 +350,7 @@ function drawLiveLiquid(group, colours, amount, angle, waveHeight, wavePhase) {
 
   // 3. The other layers, drawn on top of it, each cut exactly between its two water lines.
   for (let i = 0; i < top; i++) {
-    let shape = cutShape(bottleShape, down, lines[i], true);
+    let shape = cutShape(liquidShape, down, lines[i], true);
     if (i > 0) {
       shape = cutShape(shape, down, lines[i - 1], false);
     }

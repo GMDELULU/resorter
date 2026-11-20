@@ -42,7 +42,7 @@ function firework(stopper) {
   const box = stopper.getBoundingClientRect();
   const startX = box.left + box.width / 2;
   const startY = box.top + box.height / 2;
-  const size = box.width / 28;   // smaller sparks on a phone
+  const size = box.width / 24;   // smaller sparks on a phone
 
   // Make the sparks. Each spark is an object with a place (x, y), a speed (vx, vy) and a life.
   const sparks = [];
