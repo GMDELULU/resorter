@@ -1,0 +1,19 @@
+/* The look of the page. Colours come from design-examples/style-guide.md (chaos world). */
+
+/* The whole page */
+body {
+  background-color: #0B0806;   /* chaos background: almost black */
+  color: #B48C3A;              /* normal text: dark gold (the style guide's halo colour, reused for text) */
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  text-align: center;
+  margin: 0;
+  padding: 24px 16px;
+}
+
+/* The big heading */
+h1 {
+  color: #E2B24A;              /* bright gold (outline colour) */
+  font-size: 40px;
+  letter-spacing: 2px;
+}
