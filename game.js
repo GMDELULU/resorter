@@ -19,6 +19,10 @@ const difficulties = {
 let colourCount = difficulties.easy.colours;
 let emptyBottles = difficulties.easy.empty;
 
+// The most extra empty bottles makeRandomLevel may add when a level is very hard to make
+// (save.js checks this too).
+const maxExtraEmpty = 3;
+
 // A spare (easy) level, only used if the computer somehow cannot make a random one at all.
 // Each bottle is a list of colour numbers, from BOTTOM to TOP.
 // (The last number is the top layer: the one you can pour.)
@@ -75,6 +79,17 @@ const nextLevelMessage = "A new level is coming...";
 
 // Has the player won? true = yes, false = not yet.
 let won = false;
+
+// How many levels the player has won (it is saved, see save.js).
+let levelsWon = 0;
+
+// The name of the current difficulty ("easy", "medium" or "hard").
+let difficultyName = "easy";
+
+// movesMade() gives the number of pours in this level. Undo takes one off.
+function movesMade() {
+  return moveHistory.length;
+}
 
 // ---------- Did I win? ----------
 
@@ -206,8 +221,10 @@ function tapBottle(number) {
       };
       if (checkWin()) {
         won = true;
+        levelsWon = levelsWon + 1;
         message = winMessage + " " + nextLevelMessage;
       }
+      saveProgress();   // remember this in the browser (save.js)
     } else {
       message = reason;
       wrongBottle = number;   // the bottle you tried to pour into shakes
@@ -227,8 +244,21 @@ function undo() {
     return;
   }
   bottles = moveHistory.pop();   // take the newest saved copy off the stack
-  won = false;               // after an undo, the level is not won any more
+  if (won) {
+    won = false;               // after an undo, the level is not won any more...
+    levelsWon = levelsWon - 1; // ...so it does not count as won either
+  }
   message = "";
+  saveProgress();
+}
+
+// restartLevel() is what the Restart button does: if the level was already won,
+// the win is taken back first (like Undo), so it is not counted twice.
+function restartLevel() {
+  if (won) {
+    levelsWon = levelsWon - 1;
+  }
+  restart();
 }
 
 // restart() puts the level back to how it started.
@@ -239,6 +269,7 @@ function restart() {
   wrongBottle = null;
   won = false;
   message = "";
+  saveProgress();
 }
 
 // ---------- Random levels ----------
@@ -249,7 +280,7 @@ function makeRandomLevel() {
   // Normally a good level is found at once. With very many colours and few empty bottles it can
   // take long, so after 2 seconds we add one extra empty bottle (that makes it easier to solve)
   // and try again. So the page never freezes for long, and the level is always solvable.
-  for (let extraEmpty = 0; extraEmpty <= 3; extraEmpty++) {
+  for (let extraEmpty = 0; extraEmpty <= maxExtraEmpty; extraEmpty++) {
     const stopTime = performance.now() + 2000;
     while (performance.now() < stopTime) {
       const level = shuffledLevel(extraEmpty);
@@ -360,6 +391,7 @@ function setDifficulty(name) {
   if (!Object.hasOwn(difficulties, name)) {
     return false;   // not a difficulty we know: do nothing
   }
+  difficultyName = name;
   colourCount = difficulties[name].colours;
   emptyBottles = difficulties[name].empty;
   newLevel();

@@ -1,0 +1,153 @@
+// ReSorter: saving progress in the player's own browser.
+// We use localStorage: a small storage space in the browser, only for this game, on this device.
+// Nothing is sent anywhere, and no name or personal data is stored: only the game itself.
+// Saved data could have been changed by someone, so when we load it we CHECK everything first.
+// Note: index.html must load this file right AFTER game.js (and before draw.js).
+
+// The name under which the game is saved, and a version number for the way it is saved.
+// (If we ever change what we save, we raise the version, and old saves are simply ignored.)
+// (A clear, distinctive name, so it never mixes with other pages that use localStorage.)
+const saveKey = "resorter-progress";
+const saveVersion = 1;
+
+// ---------- Saving ----------
+
+// saveProgress() writes the game into localStorage, as text (JSON).
+function saveProgress() {
+  const data = {
+    version: saveVersion,
+    difficulty: difficultyName,
+    startingBottles: startingBottles,
+    bottles: bottles,
+    moveHistory: moveHistory,
+    levelsWon: levelsWon
+  };
+  try {
+    localStorage.setItem(saveKey, JSON.stringify(data));
+  } catch (problem) {
+    // Some browsers do not allow saving (for example a private window). Then we just don't save.
+  }
+}
+
+// forgetProgress() removes everything this game saved.
+function forgetProgress() {
+  try {
+    localStorage.removeItem(saveKey);
+  } catch (problem) {
+    // nothing to do
+  }
+}
+
+// ---------- Loading ----------
+
+// loadProgress() reads the saved game, checks it, and if it is all right, continues it.
+// If anything is wrong or missing, it starts fresh (and removes the broken save).
+function loadProgress() {
+  let data;
+  try {
+    const text = localStorage.getItem(saveKey);
+    if (text === null) {
+      return;   // nothing saved yet
+    }
+    data = JSON.parse(text);   // turn the text back into an object
+  } catch (problem) {
+    forgetProgress();          // not readable: throw it away
+    return;
+  }
+
+  if (!isGoodSave(data)) {
+    forgetProgress();
+    return;
+  }
+
+  // Everything checked: use it.
+  difficultyName = data.difficulty;
+  colourCount = difficulties[data.difficulty].colours;
+  emptyBottles = difficulties[data.difficulty].empty;
+  startingBottles = copyBottles(data.startingBottles);
+  bottles = copyBottles(data.bottles);
+  moveHistory = data.moveHistory.map(copyBottles);
+  levelsWon = data.levelsWon;
+
+  // A level that was already won when the page closed: start a new one.
+  if (checkWin()) {
+    newLevel();
+  }
+}
+
+// ---------- Checking saved data (never trust it blindly) ----------
+
+// isGoodSave(data) checks every part of a saved game. It gives true only if all is well.
+function isGoodSave(data) {
+  if (typeof data !== "object" || data === null || data.version !== saveVersion) {
+    return false;
+  }
+  if (typeof data.difficulty !== "string" || !Object.hasOwn(difficulties, data.difficulty)) {
+    return false;
+  }
+  if (!Number.isInteger(data.levelsWon) || data.levelsWon < 0 || data.levelsWon > 1000000) {
+    return false;
+  }
+  const colours = difficulties[data.difficulty].colours;
+  const empty = difficulties[data.difficulty].empty;
+  if (!isGoodLevel(data.startingBottles, colours, empty) || !isGoodLevel(data.bottles, colours, empty)) {
+    return false;
+  }
+  if (!Array.isArray(data.moveHistory) || data.moveHistory.length > 1000) {
+    return false;
+  }
+  for (const step of data.moveHistory) {
+    if (!isGoodLevel(step, colours, empty) || step.length !== data.bottles.length) {
+      return false;
+    }
+  }
+  if (data.startingBottles.length !== data.bottles.length) {
+    return false;
+  }
+  // The starting level must be a fair one, like a fresh random level: no bottle already
+  // sorted at the start, and solvable. (Someone could have changed the saved level by hand.)
+  return !data.startingBottles.some(isClosed) && canBeSolved(data.startingBottles);
+}
+
+// isGoodLevel(level, colours, empty) checks one set of bottles: the right number of bottles,
+// no bottle too full, only whole colour numbers from 1 to "colours", and every colour
+// exactly "capacity" times.
+function isGoodLevel(level, colours, empty) {
+  if (!Array.isArray(level)) {
+    return false;
+  }
+  // (makeRandomLevel may add up to maxExtraEmpty extra empty bottles; see game.js)
+  if (level.length < colours + empty || level.length > colours + empty + maxExtraEmpty) {
+    return false;
+  }
+  const counts = new Array(colours + 1).fill(0);
+  for (const bottle of level) {
+    if (!Array.isArray(bottle) || bottle.length > capacity) {
+      return false;
+    }
+    for (const colour of bottle) {
+      if (!Number.isInteger(colour) || colour < 1 || colour > colours) {
+        return false;
+      }
+      counts[colour] = counts[colour] + 1;
+    }
+  }
+  for (let colour = 1; colour <= colours; colour++) {
+    if (counts[colour] !== capacity) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// ---------- Reset progress ----------
+
+// resetProgress() forgets everything and starts fresh: easy, no levels won.
+function resetProgress() {
+  levelsWon = 0;
+  setDifficulty("easy");   // this starts a new level (and would save it)...
+  forgetProgress();        // ...so we remove the save again afterwards: nothing is stored now
+}
+
+// When the page opens: continue a saved game, if there is a good one.
+loadProgress();

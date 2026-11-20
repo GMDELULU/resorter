@@ -376,6 +376,7 @@ h1 {
 .controls,
 .settings,
 .message,
+.stats,
 h1,
 p {
   position: relative;
@@ -390,4 +391,26 @@ p {
 .sunburst {
   transform-box: fill-box;
   transform-origin: center;
+}
+
+/* ---------- Move counter and Reset progress (lesson 14) ---------- */
+
+/* The move counter and levels won: small, quiet gold text under the message. */
+.stats {
+  margin: 4px 0 0;
+  font-size: 16px;
+  color: #B48C3A;              /* dark gold */
+}
+
+/* The Reset progress button sits at the bottom, away from the game buttons. */
+.footer {
+  margin-top: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+/* A quieter version of the gold button (still at least 44 pixels high). */
+.small-button {
+  font-size: 15px;
+  opacity: 0.8;
 }

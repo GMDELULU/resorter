@@ -34,9 +34,18 @@
          aria-live: screen readers read a new message aloud. -->
     <p class="message" id="message" aria-live="polite"></p>
 
+    <!-- The move counter and the number of levels won. -->
+    <p class="stats" id="stats"></p>
+
+    <!-- Forget everything the game saved in this browser (privacy: the player decides). -->
+    <div class="footer">
+      <button type="button" class="control-button small-button" id="reset-progress">Reset progress</button>
+    </div>
+
     <!-- JavaScript, at the end so the page is loaded first.
-         game.js = the data and rules. draw.js = puts them on the screen. pour.js = the pour animation. sparkle.js = stopper and firework. -->
+         game.js = the data and rules. save.js = saving in your own browser. draw.js = puts them on the screen. pour.js = the pour animation. sparkle.js = stopper and firework. -->
     <script src="game.js"></script>
+    <script src="save.js"></script>
     <script src="draw.js"></script>
     <script src="pour.js"></script>
     <script src="sparkle.js"></script>
