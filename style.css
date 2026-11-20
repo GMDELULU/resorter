@@ -1,5 +1,17 @@
 /* The look of the page. Colours come from design-examples/style-guide.md (chaos world). */
 
+/* Our own fonts, stored in the fonts folder. The game never asks Google for them. */
+/* Chaos font: rough and damaged, for when Kharosa rules. */
+@font-face {
+  font-family: "Syne Tactile";
+  src: url("fonts/SyneTactile-Regular.ttf");
+}
+/* Restored font: thin and elegant. Not used yet: it comes with the win transformation. */
+@font-face {
+  font-family: "Pompiere";
+  src: url("fonts/Pompiere-Regular.ttf");
+}
+
 /* The whole page */
 body {
   background-color: #0B0806;   /* chaos background: almost black */
@@ -14,6 +26,7 @@ body {
 /* The big heading */
 h1 {
   color: #E2B24A;              /* bright gold (outline colour) */
+  font-family: "Syne Tactile", Georgia, serif;   /* chaos font; Georgia only if it fails to load */
   font-size: 40px;
   letter-spacing: 2px;
 }
