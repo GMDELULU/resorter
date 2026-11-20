@@ -147,7 +147,45 @@ function resetProgress() {
   levelsWon = 0;
   setDifficulty("easy");   // this starts a new level (and would save it)...
   forgetProgress();        // ...so we remove the save again afterwards: nothing is stored now
+  try {
+    localStorage.removeItem(settingsKey);   // and the settings, like "always show symbols"
+  } catch (problem) {
+    // nothing to do
+  }
 }
 
 // When the page opens: continue a saved game, if there is a good one.
 loadProgress();
+
+// ---------- Settings (like "always show symbols") ----------
+// Settings are saved apart from the game. Reset progress forgets them too (see resetProgress).
+
+const settingsKey = "resorter-settings";
+
+// loadSetting(name, standard) reads one setting. If it is missing or not a true/false value,
+// it gives back "standard". (Saved data is checked: only true or false is accepted.)
+function loadSetting(name, standard) {
+  try {
+    const settings = JSON.parse(localStorage.getItem(settingsKey));
+    if (settings !== null && typeof settings === "object" && typeof settings[name] === "boolean") {
+      return settings[name];
+    }
+  } catch (problem) {
+    // unreadable: use the standard value
+  }
+  return standard;
+}
+
+// saveSetting(name, value) saves one setting (true or false).
+function saveSetting(name, value) {
+  try {
+    let settings = JSON.parse(localStorage.getItem(settingsKey));
+    if (settings === null || typeof settings !== "object" || Array.isArray(settings)) {
+      settings = {};
+    }
+    settings[name] = (value === true);
+    localStorage.setItem(settingsKey, JSON.stringify(settings));
+  } catch (problem) {
+    // saving not allowed: the setting just lasts until the page closes
+  }
+}

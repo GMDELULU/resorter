@@ -79,6 +79,7 @@ async function playPour(info) {
     busyBottles.delete(info.from);
     busyBottles.delete(info.to);
     updateScreen();   // draw these two bottles normally again, with their new layers
+    announcePour(info);   // for screen readers (draw.js)
     if (info.closes && !wantsLessMotion()) {
       dropStopper(target);   // the pour sorted the target: stopper and firework (sparkle.js)
     }

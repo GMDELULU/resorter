@@ -10,6 +10,33 @@
 // How many short pencil strokes go on every layer of colour.
 const strokesPerLayer = 25;
 
+// ---------- Symbols for colour-blind players (lesson 16) ----------
+
+// One symbol per colour, as drawing instructions around the middle of a layer (0, 0).
+// All angular strokes, no dots or circles (style guide). Colour 1 is the first one, and so on.
+const colourSymbols = [
+  "M-5 4 L0 -5 L5 4 Z",          // 1 gold: triangle
+  "M-5 -5 L5 5 M5 -5 L-5 5",     // 2 crimson: cross
+  "M0 -6 L0 6",                  // 3 verdigris: bar
+  "M0 -6 L5 0 L0 6 L-5 0 Z",     // 4 bone: diamond
+  "M-4.5 -4.5 h9 v9 h-9 Z",      // 5 indigo: square
+  "M-5 -4 L0 4 L5 -4",           // 6 rust: chevron
+  "M-6 0 h12 M0 -6 v12",         // 7 amethyst: plus
+  "M-3 -6 v12 M3 -6 v12",        // 8 deep teal: double bar
+  "M-6 -3 L-2 3 L2 -3 L6 3",     // 9 olive: zigzag
+  "M-5 -5 L5 -5 L-5 5 L5 5"      // 10 ash: Z
+];
+
+// The names of the colours, for screen readers (programs that read the page aloud).
+const colourNames = ["gold", "crimson", "verdigris", "bone", "indigo",
+                     "rust", "amethyst", "deep teal", "olive", "ash"];
+
+// Show the symbols? Always from 6 colours on (style guide), or always if the player switched them on.
+let alwaysSymbols = loadSetting("alwaysSymbols", false);   // (save.js)
+function showSymbols() {
+  return alwaysSymbols || colourCount >= 6;
+}
+
 // ---------- The bottle shape (do not change, unless you redraw the bottle) ----------
 
 // The corner points of the bottle, as [left-right, top-down] in drawing units:
@@ -208,6 +235,18 @@ function makeBottle(bottle, number) {
   addSvgPart("path", { class: "hatch-light", d: lightStrokes }, glassContent);
   addSvgPart("path", { class: "hatch-dark", d: scribbles }, glassContent);
 
+  // The symbols: one in the middle of every layer, dark pencil with a light edge under it.
+  if (showSymbols()) {
+    bottle.forEach(function (colour, place) {
+      const middleY = bottleBottom - (place + 0.5) * layerHeight;
+      const symbol = addSvgPart("g", {
+        transform: "translate(" + round(bottleWidth / 2) + " " + round(middleY) + ")"
+      }, glassContent);
+      addSvgPart("path", { class: "symbol-edge", d: colourSymbols[colour - 1] }, symbol);
+      addSvgPart("path", { class: "symbol", d: colourSymbols[colour - 1] }, symbol);
+    });
+  }
+
   // A thin darker line on every border between two layers, and a light line on top of the liquid.
   borders.slice(1).forEach(function (border, place) {
     const isTop = (place === bottle.length - 1);
@@ -277,6 +316,29 @@ function addStopper(art, random) {
 }
 
 
+// announcePour(info) tells screen-reader users what a pour did, for example
+// "Poured gold into bottle 3. It is sorted."
+function announcePour(info) {
+  let words = "Poured " + colourNames[info.colour - 1] + " into bottle " + (info.to + 1) + ".";
+  if (info.closes) {
+    words = words + " It is sorted.";
+  }
+  document.getElementById("announce").textContent = words;
+}
+
+// bottleDescription(bottle, number) says in words what is in a bottle, for screen readers.
+function bottleDescription(bottle, number) {
+  const name = "Bottle " + (number + 1);
+  if (bottle.length === 0) {
+    return name + ", empty";
+  }
+  const colours = bottle.map(function (colour) { return colourNames[colour - 1]; });
+  if (isClosed(bottle)) {
+    return name + ", sorted and closed: " + colours[0];
+  }
+  return name + ", from bottom to top: " + colours.join(", ");
+}
+
 // ---------- Drawing all bottles ----------
 
 // drawBottles() empties the playing field and draws every bottle again from the data.
@@ -289,7 +351,7 @@ function drawBottles() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "bottle-button";
-    button.setAttribute("aria-label", "Bottle " + (number + 1));   // a name for screen readers
+    button.setAttribute("aria-label", bottleDescription(bottle, number));   // for screen readers
     button.appendChild(makeBottle(bottle, number));
     button.dataset.layers = bottle.join(",");   // remember what is drawn, see updateScreen
 
@@ -309,6 +371,9 @@ function drawBottles() {
         }
       } else {
         updateScreen();          // the look: show what changed, at once
+        if (lastPour !== null) {
+          announcePour(lastPour);  // for screen readers
+        }
         if (lastPour !== null && lastPour.closes) {
           softGlow(button);      // less motion: a soft warm glow instead of the ripple (sparkle.js)
         }
@@ -377,6 +442,7 @@ function updateScreen() {
     if (!busyBottles.has(number) && button.dataset.layers !== layers) {
       button.replaceChildren(makeBottle(bottles[number], number));
       button.dataset.layers = layers;
+      button.setAttribute("aria-label", bottleDescription(bottles[number], number));
     }
   });
   showSelection();
@@ -585,6 +651,25 @@ document.getElementById("difficulty").addEventListener("change", function (event
 // and a browser sometimes remembers an old choice after F5).
 document.getElementById("difficulty").value = difficultyName;
 
+// ---------- The "always show symbols" switch ----------
+
+const symbolsSwitch = document.getElementById("symbols-switch");
+symbolsSwitch.checked = alwaysSymbols;   // show the saved choice
+
+symbolsSwitch.addEventListener("change", function () {
+  alwaysSymbols = symbolsSwitch.checked;
+  saveSetting("alwaysSymbols", alwaysSymbols);   // remember it (save.js)
+  redrawAllBottles();
+});
+
+// redrawAllBottles() draws every (not busy) bottle again, even if its layers did not change.
+function redrawAllBottles() {
+  document.querySelectorAll(".bottle-button").forEach(function (button) {
+    delete button.dataset.layers;   // forget what was drawn, so updateScreen draws it again
+  });
+  updateScreen();
+}
+
 // ---------- Reset progress ----------
 
 document.getElementById("reset-progress").addEventListener("click", function () {
@@ -597,6 +682,8 @@ document.getElementById("reset-progress").addEventListener("click", function () 
     return;
   }
   resetProgress();                    // save.js
+  alwaysSymbols = false;              // the settings are forgotten too
+  symbolsSwitch.checked = false;
   document.getElementById("difficulty").value = difficultyName;
   keyboardBottle = 0;
   drawBottles();

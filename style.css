@@ -517,3 +517,48 @@ body::before {
     --transformation-time: 0s;
   }
 }
+
+/* ---------- Symbols for colour-blind players (lesson 16) ---------- */
+
+/* A symbol is two strokes on top of each other: a wider light edge, then the dark pencil line.
+   So it is readable on light colours (gold, bone) and on dark colours (indigo, crimson). */
+.symbol-edge {
+  fill: none;
+  stroke: var(--symbol-edge);           /* light edge (theme) */
+  stroke-width: 3.4;
+  stroke-linejoin: miter;               /* sharp corners, not round */
+  opacity: 0.85;
+}
+.symbol {
+  fill: none;
+  stroke: var(--pencil);                /* dark pencil line */
+  stroke-width: 1.6;
+  stroke-linejoin: miter;
+}
+
+/* The "Always show symbols" switch: the whole label can be tapped, at least 44 pixels high. */
+.switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 8px;
+  cursor: pointer;
+  font-size: 18px;
+}
+.switch {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--gold);   /* the tick box in gold */
+  cursor: pointer;
+}
+
+/* Text only for screen readers: on the page for them, but not visible on the screen. */
+.screen-reader-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

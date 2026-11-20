@@ -29,12 +29,24 @@
       </select>
     </div>
 
+    <!-- A switch (checkbox) for colour-blind players: always show a symbol on every colour.
+         (From 6 colours on, the symbols show anyway.) -->
+    <div class="settings">
+      <label class="switch-label" for="symbols-switch">
+        <input type="checkbox" id="symbols-switch" class="switch" autocomplete="off">
+        Always show symbols
+      </label>
+    </div>
+
     <!-- The playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
     <div class="bottles" id="bottles"></div>
 
     <!-- Messages for the player, for example when a pour is not allowed.
          aria-live: screen readers read a new message aloud. -->
     <p class="message" id="message" aria-live="polite"></p>
+
+    <!-- Only for screen readers (hidden on screen): says what each pour did. -->
+    <p class="screen-reader-only" id="announce" aria-live="polite"></p>
 
     <!-- The move counter and the number of levels won. -->
     <p class="stats" id="stats"></p>

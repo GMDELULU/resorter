@@ -28,6 +28,9 @@
   --text: var(--halo);           /* normal text: dark gold */
   --text-strong: var(--gold);    /* headings, buttons, messages: bright gold */
 
+  /* The light edge under the colour-blind symbols (lesson 16). */
+  --symbol-edge: #F3EBDD;
+
   /* ---------- The restored world (Systa and Metice): how a level ends ---------- */
   --restored-background: #F3EBDD;
   --restored-pencil: #3A2A14;
