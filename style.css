@@ -53,96 +53,79 @@ h1 {
   margin: 40px auto 0;         /* space above, and centred on the page */
 }
 
-/* One bottle: 64 x 200 pixels. Its angular shape is cut out with clip-path:
-   a list of corner points (left-right, top-down), like a connect-the-points drawing.
-   Corner points: neck top, neck bottom, shoulder, body, cut-off bottom corners.
-   NOTE: the same shape is typed three times (two outlines and the inside).
-   If you change the bottle size, change all three. */
+/* One bottle. draw.js draws it as an SVG picture: 72 x 208 pixels,
+   the bottle itself plus a little room around it for the pencil lines. */
 .bottle {
-  position: relative;
-  z-index: 0;                  /* keeps the darker outline (z-index -1) inside this bottle */
-  width: 64px;
-  height: 200px;
+  display: block;
+  width: 72px;
+  height: 208px;
   filter: drop-shadow(0 8px 10px #E2B24A40);   /* soft gold glow (gold, a quarter visible) */
 }
 
-/* Gold outline: a full gold bottle shape. The dark inside (.bottle-inside, further down)
-   lies on top of it and is a bit smaller, so only the gold edge stays visible. */
-.bottle::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: #E2B24A;   /* gold outline */
-  clip-path: polygon(20px 0, 44px 0, 44px 40px, 64px 64px, 64px 188px, 52px 200px,
-                     12px 200px, 0 188px, 0 64px, 20px 40px);
+/* ---- The parts of the drawing. draw.js gives every part one of these class names. ---- */
+
+/* The dark glass */
+.glass {
+  fill: #0B0806;               /* chaos background: almost black */
 }
 
-/* A second, darker outline, a little crooked and behind the first one,
-   so the edge looks like a pencil went over it twice. */
-.bottle::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-color: #B48C3A;   /* dark gold (halo colour) */
-  clip-path: polygon(20px 0, 44px 0, 44px 40px, 64px 64px, 64px 188px, 52px 200px,
-                     12px 200px, 0 188px, 0 64px, 20px 40px);
-  transform: translate(2px, -1px) rotate(1deg);
+/* Short pencil strokes on the layers (hatching): dark ones and light gold ones */
+.hatch-dark {
+  fill: none;
+  stroke: #090705;             /* pencil lines */
+  stroke-width: 0.8;
+  opacity: 0.55;
+}
+.hatch-light {
+  fill: none;
+  stroke: #E2B24A;             /* gold */
+  stroke-width: 0.6;
+  opacity: 0.35;
 }
 
-/* The inside of the bottle: the dark glass that holds the layers.
-   The layers stack from the bottom up. */
-.bottle-inside {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;   /* push the layers down to the bottom */
-  background-color: #0B0806;   /* chaos background: almost black */
-  clip-path: polygon(23px 3px, 41px 3px, 41px 41px, 61px 65px, 61px 187px, 51px 197px,
-                     13px 197px, 3px 187px, 3px 65px, 23px 41px);
+/* Dense dark strokes on the right side: the shadow */
+.shade {
+  fill: none;
+  stroke: #090705;             /* pencil lines */
+  stroke-width: 1;
+  opacity: 0.45;
 }
 
-/* Two light gold highlight strokes on the left side of the glass */
-.bottle-inside::before {
-  content: "";
-  position: absolute;
-  left: 13px;
-  top: 90px;
-  width: 1px;
-  height: 60px;
-  background-color: #E2B24A40; /* gold, more see-through */
-  transform: rotate(-1deg);
-}
-.bottle-inside::after {
-  content: "";
-  position: absolute;
-  left: 8px;
-  top: 76px;
-  width: 2px;
-  height: 100px;
-  background-color: #E2B24A66; /* gold, partly see-through */
-  transform: rotate(2deg);
+/* A few light gold strokes on the left side: the shine on the glass */
+.highlight {
+  fill: none;
+  stroke: #E2B24A;             /* gold */
+  stroke-width: 0.7;
+  opacity: 0.45;
 }
 
-/* One layer of colour. All layers are the same height.
-   On top of the colour: thin diagonal pencil strokes (hatching)
-   and a darker right side, like in the style guide. */
-.layer {
-  /* The body of the bottle has room for about 120 pixels of liquid.
-     draw.js puts the capacity (--capacity) on the playing field, and every layer inside reads it:
-     4 layers are 30 pixels high, 5 layers 24 pixels. The ", 4" means: use 4 if nobody set it. */
-  height: calc(120px / var(--capacity, 4));
-  flex-shrink: 0;              /* never squash a layer */
-  background-image:
-    linear-gradient(to right, transparent 55%, #090705AA),
-    repeating-linear-gradient(115deg, transparent 0 5px, #09070533 5px 6px);
+/* The top of the liquid: a light, wobbly line */
+.surface {
+  fill: none;
+  stroke: #E2B24A;             /* gold */
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+/* The outline: first one thick dark line, then thin gold lines drawn over it,
+   each a little crooked, like a pencil going over it again. */
+.outline-dark {
+  fill: none;
+  stroke: #090705;             /* pencil lines */
+  stroke-width: 3;
+}
+.outline {
+  fill: none;
+  stroke: #E2B24A;             /* gold outline */
+  stroke-width: 1.1;
+  stroke-linejoin: miter;      /* sharp corners, not round */
+  opacity: 0.8;
 }
 
 /* The layer colours: the game only says "colour 1, 2, 3...".
-   Here we decide what each colour looks like (chaos colours from the style guide). */
-.colour-1 { background-color: #D9A63C; }   /* gold */
-.colour-2 { background-color: #651722; }   /* crimson */
-.colour-3 { background-color: #2A5246; }   /* verdigris */
-.colour-4 { background-color: #7E7360; }   /* bone */
+   Here we decide what each colour looks like (chaos colours from the style guide).
+   "fill" is the paint colour inside an SVG shape. */
+.colour-1 { fill: #D9A63C; }   /* gold */
+.colour-2 { fill: #651722; }   /* crimson */
+.colour-3 { fill: #2A5246; }   /* verdigris */
+.colour-4 { fill: #7E7360; }   /* bone */
