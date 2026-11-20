@@ -215,17 +215,22 @@ function drawBottles() {
     button.className = "bottle-button";
     button.setAttribute("aria-label", "Bottle " + (number + 1));   // a name for screen readers
     button.appendChild(makeBottle(bottle, number));
+    button.dataset.layers = bottle.join(",");   // remember what is drawn, see updateScreen
 
     // An event listener: "when this button is clicked, do these steps".
     // "click" works the same for a mouse click, a finger tap and the Enter or Space key.
     button.addEventListener("click", function () {
-      if (pouring) {
-        return;                  // a pour animation is playing: wait until it is finished
+      if (busyBottles.has(number)) {
+        return;                  // this bottle is busy in a pour animation: wait until it is finished
       }
       tapBottle(number);         // the rule: what a tap means (in game.js)
       moveKeyboardTo(number, false);   // the keyboard continues from the tapped bottle
       if (lastPour !== null && !wantsLessMotion()) {
-        playPour(lastPour);      // show the pour as an animation (in pour.js)
+        playPour(lastPour);      // show the pour as an animation (in pour.js); other bottles stay free
+        showSelection();
+        if (!won) {
+          showMessage();         // (a win message waits until the last pour has finished)
+        }
       } else {
         updateScreen();          // the look: show what changed, at once
       }
@@ -283,23 +288,29 @@ document.getElementById("bottles").addEventListener("keydown", function (event) 
 // updateScreen() shows the newest state after a tap: the pictures, the lift and the message.
 // It keeps the buttons and only swaps the pictures inside them,
 // so the keyboard frame stays where it is.
+// Bottles that are busy in a pour animation are left alone: the animation draws them.
 function updateScreen() {
   const buttons = document.querySelectorAll(".bottle-button");
   buttons.forEach(function (button, number) {
-    button.replaceChildren(makeBottle(bottles[number], number));
+    // Only redraw a bottle if its layers changed. (So a stopper that is still dropping,
+    // or a bottle that is still pouring, is not wiped away by a redraw for another bottle.)
+    const layers = bottles[number].join(",");
+    if (!busyBottles.has(number) && button.dataset.layers !== layers) {
+      button.replaceChildren(makeBottle(bottles[number], number));
+      button.dataset.layers = layers;
+    }
   });
   showSelection();
-  const messageLine = document.getElementById("message");
-  messageLine.textContent = message;
-  messageLine.classList.toggle("win", won);   // a win message looks different (see style.css)
 
-  if (wrongBottle !== null) {
-    ripple(buttons[wrongBottle]);
+  // A win waits until every pour animation has finished.
+  if (won && busyBottles.size > 0) {
+    return;
   }
+  showMessage();
 
-  // A bottle was just sorted: its stopper drops on, with a firework (in sparkle.js).
-  if (justClosed !== null && !wantsLessMotion()) {
-    dropStopper(buttons[justClosed]);
+  if (wrongBottle !== null && !busyBottles.has(wrongBottle)) {
+    ripple(buttons[wrongBottle]);
+    wrongBottle = null;   // rippled once: done (so a later redraw does not ripple it again)
   }
 
   // Won: after a few seconds a new level starts by itself.
@@ -310,6 +321,13 @@ function updateScreen() {
     clearTimeout(newLevelTimer);
     newLevelTimer = null;
   }
+}
+
+// showMessage() puts the newest message on the screen.
+function showMessage() {
+  const messageLine = document.getElementById("message");
+  messageLine.textContent = message;
+  messageLine.classList.toggle("win", won);   // a win message looks different (see style.css)
 }
 
 // ---------- The next level ----------
@@ -324,7 +342,11 @@ let newLevelTimer = null;
 // meantime, the level is not won any more, and nothing happens.
 function startNextLevel() {
   newLevelTimer = null;
-  if (!won || pouring) {
+  if (!won) {
+    return;
+  }
+  if (busyBottles.size > 0) {
+    newLevelTimer = setTimeout(startNextLevel, 300);   // a pour is still playing: try again soon
     return;
   }
   // Was the keyboard on a bottle? Then put it back on bottle 1 of the new level.
@@ -430,15 +452,15 @@ function showSelection() {
 // Same pattern as the bottles: first the rule (game.js), then show what changed.
 
 document.getElementById("undo-button").addEventListener("click", function () {
-  if (pouring) {
-    return;   // wait until the pour animation is finished
+  if (busyBottles.size > 0) {
+    return;   // wait until all pour animations are finished
   }
   undo();
   updateScreen();
 });
 
 document.getElementById("restart-button").addEventListener("click", function () {
-  if (pouring) {
+  if (busyBottles.size > 0) {
     return;
   }
   restart();

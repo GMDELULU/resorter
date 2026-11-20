@@ -1,11 +1,11 @@
 // ReSorter: the pour animation.
-// The rule (game.js) has already poured; this file only SHOWS it, step by step:
-//   1. the picked-up bottle rises until its mouth is level with the target's mouth;
-//   2. it moves across, in front of the other bottles;
-//   3. it tips over, so its mouth is just above the target's mouth, and the liquid slides
-//      (level, like real water) towards the mouth;
-//   4. a stream of colour flows down: the lifted bottle drains and the target fills, bit by bit;
-//   5. it tips back, rises, and goes back to its own place.
+// The rule (game.js) has already poured; this file only SHOWS it:
+//   1. the picked-up bottle swings over to the target in one smooth arc, and tips on the way;
+//      inside it, the liquid stays level (like real water) and slides towards the mouth;
+//   2. it pours: a stream flows down, the lifted bottle drains and the target fills, bit by bit;
+//   3. it swings back to its own place in an arc, tipping upright again.
+// Every move speeds up and slows down gently (slow-fast-slow), like Ja's naturalMovement.html.
+// Several pours can play at the same time, as long as they use different bottles.
 // Note: index.html must load this file AFTER game.js and draw.js.
 
 // ---------- Settings (you may change these) ----------
@@ -17,71 +17,90 @@ const pourSpeed = 1;
 const maxWaveHeight = 3;
 const waveSpeed = 6;
 
-// How long each step takes, in milliseconds (1000 = 1 second), at pourSpeed 1.
+// How long each part takes, in milliseconds (1000 = 1 second), at pourSpeed 1.
 const pourSteps = {
-  rise: 150,
-  moveOver: 220,
-  tipOver: 300,
-  pour: 900,
-  tipBack: 250,
-  moveBack: 220,
-  goDown: 150
+  swingOver: 450,   // the arc to the target, tipping on the way
+  pour: 650,        // pouring
+  swingBack: 450    // the arc back home
 };
+
+// How high the arc goes above a straight line, in pixels on a laptop.
+const arcHeight = 50;
 
 // ---------- State ----------
 
-// true while a pour animation is playing. Taps wait until it is false again.
-let pouring = false;
+// The bottles that are busy in a pour animation right now (by number).
+// Taps on these bottles wait; all other bottles can be used at once.
+const busyBottles = new Set();
 
-// A see-through layer over the whole page, where the stream of colour is drawn.
+// A see-through layer over the whole page, where the streams of colour are drawn.
 // pointer-events: none (in style.css) means taps go straight through it.
 const pourLayer = addSvgPart("svg", { class: "pour-layer", "aria-hidden": "true" });
 document.body.appendChild(pourLayer);
 
+// ---------- Helpers ----------
+
+// slowFastSlow(t) turns an even 0..1 into a gentle one: slow at the start, fast in the middle,
+// slow at the end. (The same formula as in Ja's naturalMovement.html.)
+function slowFastSlow(t) {
+  if (t < 0.5) {
+    return 4 * t * t * t;
+  }
+  return 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// between(a, b, share) gives the value a "share" of the way from a to b (share 0 = a, 1 = b).
+function between(a, b, share) {
+  return a + (b - a) * share;
+}
+
 // ---------- The animation ----------
 
 // playPour(info) shows one pour. "info" is lastPour from game.js:
-// { from, to, colour, layersBefore }.
+// { from, to, colour, layersBefore, closes }.
 // "async" means this function can pause (await) in the middle without freezing the page.
 async function playPour(info) {
-  pouring = true;
-  try {
-    await showPour(info);
-  } catch (problem) {
-    // If anything goes wrong, show the new state at once instead of getting stuck.
-    console.error(problem);
-    updateScreen();
-  } finally {
-    // "finally" always runs, also after a problem: tidy up, so the game is never left locked.
-    document.querySelectorAll(".bottle-button").forEach(function (button) {
-      button.style.position = "";
-      button.style.zIndex = "";
-      button.style.transition = "";
-    });
-    pourLayer.replaceChildren();   // remove any stream that is left
-    pouring = false;
-  }
-}
-
-// showPour(info) does the real work of the animation.
-async function showPour(info) {
+  busyBottles.add(info.from);
+  busyBottles.add(info.to);
   const buttons = document.querySelectorAll(".bottle-button");
   const source = buttons[info.from];
   const target = buttons[info.to];
+  try {
+    await showPour(info, source, target);
+  } catch (problem) {
+    console.error(problem);   // if anything goes wrong, we still tidy up below
+  } finally {
+    // "finally" always runs, also after a problem: tidy up, so the game is never left locked.
+    source.style.transform = "";
+    source.style.position = "";
+    source.style.zIndex = "";
+    source.style.transition = "";
+    busyBottles.delete(info.from);
+    busyBottles.delete(info.to);
+    updateScreen();   // draw these two bottles normally again, with their new layers
+    if (info.closes && !wantsLessMotion()) {
+      dropStopper(target);   // the pour sorted the target: stopper and firework (sparkle.js)
+    }
+  }
+}
 
+// showPour(info, source, target) does the real work of the animation.
+async function showPour(info, source, target) {
   // 1. Where is everything? Measure the bottles on the screen, in pixels.
-  //    The source is lifted (picked up) right now; remember how high, then measure it unlifted.
+  //    The source is lifted (picked up) right now; remember how high, then hold it there.
   const liftNow = currentLift(source);
-  source.style.transition = "none";   // no gliding while we take over the movement
+  source.style.transition = "none";   // no gliding: we move it ourselves now
   source.classList.remove("selected");
+  source.style.transform = "translate(0px, " + liftNow + "px)";
   const s = source.getBoundingClientRect();
   const t = target.getBoundingClientRect();
   const size = s.height / 208;        // 1 on a laptop; smaller on a phone
+  const homeTop = s.top - liftNow;    // where the bottle's top is when it stands in its place
 
   // The point to rotate around is the middle of the bottle.
   // The mouth is 100 drawing-units above the middle.
   const sourceMiddleX = s.left + s.width / 2;
-  const sourceMiddleY = s.top + s.height / 2;
+  const sourceMiddleY = homeTop + s.height / 2;
   const mouthDistance = 100 * size;
 
   // Tip towards the side with the most room on the screen.
@@ -90,68 +109,19 @@ async function showPour(info) {
   const tipAngle = fromLeft ? 100 : -100;          // degrees; + = clockwise
   const radians = tipAngle * Math.PI / 180;
 
-  // Where the mouth must end up: just above the target's mouth,
-  // high enough that the tipped bottle stays above the tops of the other bottles.
+  // Where the mouth must end up: just above the target's mouth.
   const mouthX = targetMiddleX;
   const mouthY = t.top - 24 * size;
 
-  // Where the middle of the bottle must be, so that after tipping the mouth is there.
-  const middleX = mouthX - mouthDistance * Math.sin(radians);
-  const middleY = mouthY + mouthDistance * Math.cos(radians);
-  const moveX = middleX - sourceMiddleX;
-  const moveY = middleY - sourceMiddleY;
-
-  // How high to rise first: until the mouth of this bottle is level with the target's mouth.
-  // (It stays lifted at least as high as it was.) Then it moves across, in front of the others.
-  const riseY = Math.min(liftNow, t.top - s.top);
-
-  // 2. The movement, as a list of poses (keyframes), from start to end.
-  const step = {};
-  for (const name in pourSteps) {
-    step[name] = pourSteps[name] * pourSpeed;
-  }
-  const total = step.rise + step.moveOver + step.tipOver + step.pour +
-                step.tipBack + step.moveBack + step.goDown;
-
-  // "offset" says when each pose is reached: 0 = start, 1 = end.
-  let time = 0;
-  function at(ms) {
-    time = time + ms;
-    return time / total;
-  }
-  const poses = [
-    { transform: "translate(0px, " + liftNow + "px) rotate(0deg)", offset: 0 },
-    // rise straight up
-    { transform: "translate(0px, " + riseY + "px) rotate(0deg)", offset: at(step.rise) },
-    // move across, mouths level
-    { transform: "translate(" + moveX + "px, " + riseY + "px) rotate(0deg)", offset: at(step.moveOver) },
-    // tip over and come down to the target's mouth
-    { transform: "translate(" + moveX + "px, " + moveY + "px) rotate(" + tipAngle + "deg)", offset: at(step.tipOver) },
-    // stay there while pouring
-    { transform: "translate(" + moveX + "px, " + moveY + "px) rotate(" + tipAngle + "deg)", offset: at(step.pour) },
-    // tip back, mouths level again
-    { transform: "translate(" + moveX + "px, " + riseY + "px) rotate(0deg)", offset: at(step.tipBack) },
-    // move back across
-    { transform: "translate(0px, " + riseY + "px) rotate(0deg)", offset: at(step.moveBack) },
-    // and down into its own place
-    { transform: "translate(0px, 0px) rotate(0deg)", offset: 1 }
-  ];
+  // How far the middle of the bottle must move, so that when tipped the mouth is there.
+  const pourX = mouthX - mouthDistance * Math.sin(radians) - sourceMiddleX;
+  const pourY = mouthY + mouthDistance * Math.cos(radians) - sourceMiddleY;
 
   // The moving bottle goes in front of the others (z-index), like lifting it towards you.
   source.style.position = "relative";
   source.style.zIndex = "10";
-  // Each step speeds up and slows down gently (ease-in-out), but the clock itself runs evenly
-  // ("linear"), so we can tell exactly which step the bottle is in from movement.currentTime.
-  poses.forEach(function (pose) {
-    pose.easing = "ease-in-out";
-  });
-  const movement = source.animate(poses, { duration: total, easing: "linear" });
 
-  // Wait until the browser has really started the movement, so everything below
-  // keeps in step with the bottle, even on a slow phone.
-  await movement.ready;
-
-  // 3. The liquid. While the bottle moves, we draw the liquid ourselves, many times per second:
+  // 2. The liquid. While the bottle moves, we draw the liquid ourselves, many times per second:
   //    it stays level like real water, slides towards the mouth when the bottle tips,
   //    drains out of the lifted bottle bit by bit, and fills the other bottle bit by bit.
   const moved = bottles[info.to].length - info.layersBefore;   // how many layers are poured
@@ -159,6 +129,7 @@ async function showPour(info) {
   const targetColours = bottles[info.to].slice();             // its layers after the pour
   const sourceLiquid = startLiveLiquid(source);
   const targetLiquid = startLiveLiquid(target);
+  const layerHeight = liquidHeight / capacity;
 
   // The stream: a thin bar of colour from the mouth down to the liquid in the target.
   const stream = addSvgPart("rect", {
@@ -169,63 +140,91 @@ async function showPour(info) {
     height: 0
   }, pourLayer);
 
-  const pourStart = step.rise + step.moveOver + step.tipOver;
-  const layerHeight = liquidHeight / capacity;
+  const swingOver = pourSteps.swingOver * pourSpeed;
+  const pourTime = pourSteps.pour * pourSpeed;
+  const swingBack = pourSteps.swingBack * pourSpeed;
+  const total = swingOver + pourTime + swingBack;
+  const arc = arcHeight * size;
 
-  // One drawing step. The browser calls it before every new picture (about 60 times per second).
-  await new Promise(function (finished) {
-    function frame() {
-      try {
-        drawFrame();
-      } catch (problem) {
-        console.error(problem);
-        finished();   // stop drawing; playPour then tidies up
-        return;
+  try {
+    // 3. Every picture: work out where the bottle is and how far it is tipped, and draw it.
+    await new Promise(function (finished) {
+      const startTime = performance.now();
+
+      function frame(now) {
+        const time = Math.max(0, now - startTime);
+        let x;
+        let y;
+        let angle;
+        let progress;   // how far the pour is: 0 = nothing poured yet, 1 = everything poured
+
+        if (time < swingOver) {
+          // Swing over: one arc from home to the pour place, tipping on the way.
+          const e = slowFastSlow(time / swingOver);
+          x = between(0, pourX, e);
+          y = between(liftNow, pourY, e) - Math.sin(e * Math.PI) * arc;   // up in the middle
+          angle = between(0, tipAngle, e);
+          progress = 0;
+        } else if (time < swingOver + pourTime) {
+          // Pour: stay still, tipped.
+          x = pourX;
+          y = pourY;
+          angle = tipAngle;
+          progress = (time - swingOver) / pourTime;
+        } else {
+          // Swing back: an arc home, tipping upright on the way.
+          const e = slowFastSlow(Math.min(1, (time - swingOver - pourTime) / swingBack));
+          x = between(pourX, 0, e);
+          y = between(pourY, 0, e) - Math.sin(e * Math.PI) * arc;
+          angle = between(tipAngle, 0, e);
+          progress = 1;
+        }
+
+        source.style.transform = "translate(" + x + "px, " + y + "px) rotate(" + angle + "deg)";
+
+        const poured = moved * progress;   // how many layers have flowed out so far (can be 1.5)
+        const wavePhase = time / 1000 * waveSpeed;
+        // The waves: in the lifted bottle while it moves and pours; in the other bottle while it fills.
+        const sourceWaves = waveSize(time, 0, total);
+        const targetWaves = waveSize(time, swingOver, swingOver + pourTime + 400);
+        drawLiveLiquid(sourceLiquid, sourceColours, sourceColours.length - poured,
+                       angle * Math.PI / 180, sourceWaves, wavePhase);
+        drawLiveLiquid(targetLiquid, targetColours, info.layersBefore + poured, 0, targetWaves, wavePhase);
+
+        // The stream: it grows down from the mouth at the start, and its tail falls in at the end.
+        if (progress > 0 && progress < 1) {
+          const surfaceY = t.top + (bottleBottom - (info.layersBefore + poured) * layerHeight + 4) * size;
+          const fullLength = Math.max(0, surfaceY - mouthY);
+          const head = fullLength * Math.min(1, progress / 0.15);
+          const tail = fullLength * Math.max(0, (progress - 0.9) / 0.1);
+          stream.setAttribute("y", mouthY + tail);
+          stream.setAttribute("height", Math.max(0, head - tail));
+        } else {
+          stream.setAttribute("height", 0);
+        }
+
+        if (time < total) {
+          requestAnimationFrame(safeFrame);
+        } else {
+          finished();   // the bottle is back home
+        }
       }
-      if (movement.playState === "running") {
-        requestAnimationFrame(frame);
-      } else {
-        finished();   // the bottle is back home
+
+      // safeFrame runs one frame; if anything goes wrong, it stops the animation instead of freezing.
+      function safeFrame(now) {
+        try {
+          frame(now);
+        } catch (problem) {
+          console.error(problem);
+          finished();
+        }
       }
-    }
-    function drawFrame() {
-      const now = movement.currentTime || 0;
-      // How far the pour is: 0 = nothing poured yet, 1 = everything poured.
-      const progress = Math.min(1, Math.max(0, (now - pourStart) / step.pour));
-      const poured = moved * progress;   // how many layers have flowed out so far (can be 1.5)
 
-      // The lifted bottle: tipped at its current angle, with less and less liquid.
-      // The waves: in the lifted bottle while it moves and pours; in the other bottle while it fills.
-      const wavePhase = now / 1000 * waveSpeed;
-      const sourceWaves = waveSize(now, step.rise, pourStart + step.pour + step.tipBack);
-      const targetWaves = waveSize(now, pourStart, pourStart + step.pour + 400);
-
-      drawLiveLiquid(sourceLiquid, sourceColours, sourceColours.length - poured, currentAngle(source),
-                     sourceWaves, wavePhase);
-      // The other bottle: upright, with more and more liquid.
-      drawLiveLiquid(targetLiquid, targetColours, info.layersBefore + poured, 0, targetWaves, wavePhase);
-
-      // The stream: it grows down from the mouth at the start, and its tail falls in at the end.
-      if (progress > 0 && progress < 1) {
-        const surfaceY = t.top + (bottleBottom - (info.layersBefore + poured) * layerHeight + 4) * size;
-        const fullLength = Math.max(0, surfaceY - mouthY);
-        const head = fullLength * Math.min(1, progress / 0.15);
-        const tail = fullLength * Math.max(0, (progress - 0.9) / 0.1);
-        stream.setAttribute("y", mouthY + tail);
-        stream.setAttribute("height", Math.max(0, head - tail));
-      } else {
-        stream.setAttribute("height", 0);
-      }
-    }
-    frame();
-  });
-
-  // 4. Tidy up: draw the bottles normally again, with their new layers.
-  stream.remove();
-  source.style.position = "";
-  source.style.zIndex = "";
-  source.style.transition = "";
-  updateScreen();
+      requestAnimationFrame(safeFrame);
+    });
+  } finally {
+    stream.remove();
+  }
 }
 
 // ---------- Live liquid: level like real water ----------
@@ -243,16 +242,6 @@ function startLiveLiquid(button) {
   live.setAttribute("clip-path", normalLiquid.getAttribute("clip-path"));   // the same stencil
   normalLiquid.after(live);   // in the same place, so the outlines stay on top
   return live;
-}
-
-// currentAngle(button) reads how far a button is turned right now, in radians.
-function currentAngle(button) {
-  const transform = getComputedStyle(button).transform;
-  if (transform === "none") {
-    return 0;
-  }
-  const matrix = new DOMMatrix(transform);
-  return Math.atan2(matrix.b, matrix.a);
 }
 
 // depthOf(point, down): how far "down" a point is, when "down" is the direction of gravity.

@@ -59,9 +59,6 @@ let wrongBottle = null;
 // It is an object: a group of named values, like { from: 0, to: 4, colour: 2, ... }.
 let lastPour = null;
 
-// The bottle that was just closed by the last pour (it gets its stopper), or null.
-let justClosed = null;
-
 // The message when the player wins.
 const winMessage = "Order is restored! Kharosa's chaos is sorted.";
 // Added after the win message, because a new level starts by itself.
@@ -167,7 +164,6 @@ function tapBottle(number) {
   message = "";
   wrongBottle = null;
   lastPour = null;
-  justClosed = null;
 
   if (selectedBottle === null) {
     // Nothing picked up yet: pick up this bottle, unless it is empty or closed.
@@ -196,11 +192,9 @@ function tapBottle(number) {
         from: selectedBottle,
         to: number,
         colour: colour,
-        layersBefore: amountBefore    // how many layers the target had before the pour
+        layersBefore: amountBefore,   // how many layers the target had before the pour
+        closes: isClosed(bottles[number])   // true if this pour sorted the target (stopper!)
       };
-      if (isClosed(bottles[number])) {
-        justClosed = number;   // this pour sorted the bottle: it gets its stopper
-      }
       if (checkWin()) {
         won = true;
         message = winMessage + " " + nextLevelMessage;
@@ -219,7 +213,6 @@ function tapBottle(number) {
 function undo() {
   selectedBottle = null;
   wrongBottle = null;
-  justClosed = null;
   if (moveHistory.length === 0) {
     message = "Nothing to undo yet.";
     return;
@@ -232,7 +225,6 @@ function undo() {
 // restart() puts the level back to how it started.
 function restart() {
   bottles = copyBottles(startingBottles);
-  justClosed = null;
   moveHistory = [];
   selectedBottle = null;
   wrongBottle = null;
