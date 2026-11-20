@@ -98,7 +98,7 @@ function makeBottle(bottle, number) {
   // The dark glass.
   addSvgPart("polygon", { class: "glass", points: shapePoints }, art);
 
-  const glassContent = addSvgPart("g", { "clip-path": "url(#" + stencilName + ")" }, art);
+  const glassContent = addSvgPart("g", { class: "glass-content", "clip-path": "url(#" + stencilName + ")" }, art);
 
   // The layers, from the bottom up. Each one gets a block of colour and pencil strokes.
   const layerHeight = liquidHeight / capacity;
