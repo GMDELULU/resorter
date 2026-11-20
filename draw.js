@@ -87,6 +87,12 @@ function pencilLine(points, wobble, random, closed) {
   return instructions;
 }
 
+// themeColour(name) reads a colour from the theme file (theme-liquid.css), for example
+// themeColour("--gold"). We need it where JavaScript sets a colour itself.
+function themeColour(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 // pointsText(points) turns [[1, 2], [3, 4]] into "1,2 3,4", the way SVG wants corner points.
 function pointsText(points) {
   return points.map(function (point) { return round(point[0]) + "," + round(point[1]); }).join(" ");
@@ -126,9 +132,9 @@ function makeBottle(bottle, number) {
   // A warm pool of gold light under the bottle, fading outwards (a "radial gradient").
   const poolName = "light-pool-" + number;
   const pool = addSvgPart("radialGradient", { id: poolName }, picture);
-  addSvgPart("stop", { offset: "0", "stop-color": "#E2B24A", "stop-opacity": "0.45" }, pool);
-  addSvgPart("stop", { offset: "0.5", "stop-color": "#E2B24A", "stop-opacity": "0.15" }, pool);
-  addSvgPart("stop", { offset: "1", "stop-color": "#E2B24A", "stop-opacity": "0" }, pool);
+  addSvgPart("stop", { offset: "0", style: "stop-color: var(--gold); stop-opacity: 0.45" }, pool);
+  addSvgPart("stop", { offset: "0.5", style: "stop-color: var(--gold); stop-opacity: 0.15" }, pool);
+  addSvgPart("stop", { offset: "1", style: "stop-color: var(--gold); stop-opacity: 0" }, pool);
   addSvgPart("ellipse", {
     class: "light-pool", cx: bottleWidth / 2, cy: 208, rx: bottleWidth * 0.95, ry: 11, fill: "url(#" + poolName + ")"
   }, picture);

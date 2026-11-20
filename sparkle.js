@@ -11,8 +11,8 @@ const sparkCount = 30;           // how many sparks in the firework
 const sparkGravity = 0.06;       // how fast the sparks fall
 const sparkFriction = 0.96;      // 1 = no slowing down; smaller = slows down faster
 const sparkFade = 0.025;         // how fast the sparks fade (bigger = shorter firework)
-// Gold colours from the style guide (outline gold, restored halo, chaos gold, restored gold).
-const sparkColours = ["#E2B24A", "#F7D774", "#D9A63C", "#F5C542"];
+// The spark colours: names of gold colours in the theme file (theme-liquid.css).
+const sparkColours = ["--gold", "--restored-halo", "--colour-1", "--restored-colour-1"];
 
 // ---------- The stopper drops on ----------
 
@@ -59,7 +59,7 @@ function firework(stopper) {
       life: 1,
       line: addSvgPart("line", {
         class: "spark",
-        stroke: sparkColours[count % sparkColours.length],
+        stroke: themeColour(sparkColours[count % sparkColours.length]),
         "stroke-width": 1.5 * size
       }, pourLayer)
     });
@@ -108,16 +108,16 @@ function firework(stopper) {
 const momentLayer = addSvgPart("svg", { class: "moment-layer", "aria-hidden": "true" });
 document.body.appendChild(momentLayer);
 
-// Colours from the style guide: halo, gold outline, chaos gold, restored halo, pencil lines.
-const sunColours = ["#B48C3A", "#E2B24A", "#D9A63C", "#F7D774"];
+// The sun's texture colours: names of gold colours in the theme file (theme-liquid.css).
+const sunColours = ["--halo", "--gold", "--colour-1", "--restored-halo"];
 
 // showSunburst(x, y, radius, howLong) draws the sun with feathers around point (x, y), on the screen.
 function showSunburst(x, y, radius, howLong) {
   const group = addSvgPart("g", { class: "sunburst" }, momentLayer);
 
   // A dark ring around the sun, then the sun itself.
-  addSvgPart("circle", { cx: x, cy: y, r: radius * 1.09, fill: "#0B0806" }, group);
-  addSvgPart("circle", { cx: x, cy: y, r: radius, fill: "#B48C3A" }, group);
+  addSvgPart("circle", { cx: x, cy: y, r: radius * 1.09, fill: themeColour("--background") }, group);
+  addSvgPart("circle", { cx: x, cy: y, r: radius, fill: themeColour("--halo") }, group);
 
   // Texture: many short strokes inside the sun, in different golds (like gold leaf).
   for (let layer = 0; layer < sunColours.length; layer++) {
@@ -133,12 +133,12 @@ function showSunburst(x, y, radius, howLong) {
                  " l" + round(Math.cos(turn) * length) + " " + round(Math.sin(turn) * length) + " ";
     }
     addSvgPart("path", {
-      d: strokes, fill: "none", stroke: sunColours[layer], "stroke-width": Math.max(0.8, radius / 60), opacity: 0.6
+      d: strokes, fill: "none", stroke: themeColour(sunColours[layer]), "stroke-width": Math.max(0.8, radius / 60), opacity: 0.6
     }, group);
   }
   // The sketchy edge of the sun: a dark pencil circle.
   addSvgPart("circle", {
-    cx: x, cy: y, r: radius, fill: "none", stroke: "#090705", "stroke-width": Math.max(1, radius / 50), opacity: 0.8
+    cx: x, cy: y, r: radius, fill: "none", stroke: themeColour("--pencil"), "stroke-width": Math.max(1, radius / 50), opacity: 0.8
   }, group);
 
   // Feathers: dark curved strokes from the middle out to the left and right, some with a gold vein.
@@ -153,12 +153,12 @@ function showSunburst(x, y, radius, howLong) {
       const feather = "M" + round(startX) + " " + round(startY) +
                       " Q" + round(bendX) + " " + round(bendY) + " " + round(endX) + " " + round(endY);
       addSvgPart("path", {
-        d: feather, fill: "none", stroke: "#090705",
+        d: feather, fill: "none", stroke: themeColour("--pencil"),
         "stroke-width": radius * (0.04 + Math.random() * 0.05), opacity: 0.95
       }, group);
       if (Math.random() < 0.6) {
         addSvgPart("path", {
-          d: feather, fill: "none", stroke: "#E2B24A", "stroke-width": Math.max(0.6, radius / 80), opacity: 0.5
+          d: feather, fill: "none", stroke: themeColour("--gold"), "stroke-width": Math.max(0.6, radius / 80), opacity: 0.5
         }, group);
       }
     }

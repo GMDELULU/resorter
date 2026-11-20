@@ -1,0 +1,44 @@
+/* ReSorter theme: LIQUID.
+   Every colour of the game lives here, and only here (the style guide asks for one theme file).
+   The game itself only says "colour 1", "gold", "background"...; this file decides what they look like.
+   A new theme (for example attic boxes) would be a second file like this one, with other values.
+
+   Each name starts with two dashes: it is a CSS variable. Other files use it with var(--name). */
+
+:root {
+  /* ---------- The chaos world (Kharosa rules): how every level starts ---------- */
+  --background: #0B0806;      /* almost black */
+  --pencil: #090705;          /* pencil lines */
+  --gold: #E2B24A;            /* gold outline */
+  --halo: #B48C3A;            /* halo, dark gold */
+
+  /* The layer colours (chaos), in the style guide's order. */
+  --colour-1: #D9A63C;        /* gold */
+  --colour-2: #651722;        /* crimson */
+  --colour-3: #2A5246;        /* verdigris */
+  --colour-4: #7E7360;        /* bone */
+  --colour-5: #26305E;        /* indigo */
+  --colour-6: #8A4421;        /* rust */
+  --colour-7: #4A2557;        /* amethyst */
+  --colour-8: #1E4F5C;        /* deep teal */
+  --colour-9: #5A5A22;        /* olive */
+  --colour-10: #3A3F48;       /* ash */
+
+  /* ---------- The restored world (Systa and Metice): how a level ends ---------- */
+  --restored-background: #F3EBDD;
+  --restored-pencil: #3A2A14;
+  --restored-gold: #D4A537;
+  --restored-halo: #F7D774;
+
+  /* The layer colours (restored): the same hue, light and clear. */
+  --restored-colour-1: #F5C542;
+  --restored-colour-2: #E0475B;
+  --restored-colour-3: #2FB58A;
+  --restored-colour-4: #CDB98F;
+  --restored-colour-5: #4C6FE0;
+  --restored-colour-6: #F08A3C;
+  --restored-colour-7: #A65CD6;
+  --restored-colour-8: #3CC2D6;
+  --restored-colour-9: #A8C24A;
+  --restored-colour-10: #A9B4C2;
+}

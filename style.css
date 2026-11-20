@@ -1,4 +1,4 @@
-/* The look of the page. Colours come from design-examples/style-guide.md (chaos world). */
+/* The look of the page. All colours come from the theme file (theme-liquid.css), as var(--name). */
 
 /* Our own fonts, stored in the fonts folder. The game never asks Google for them. */
 /* Chaos font: rough and damaged, for when Kharosa rules. */
@@ -23,15 +23,15 @@
 
 /* The whole page */
 body {
-  background-color: #0B0806;   /* chaos background: almost black */
+  background-color: var(--background);   /* chaos background: almost black */
   /* On top of it: faint rows of gold rune marks (background.svg, repeated), and a dark
      vignette that makes the edges of the screen darker (the style guide asks for both). */
   background-image:
-    radial-gradient(ellipse at center, transparent 45%, #0B0806E6 100%),
+    radial-gradient(ellipse at center, transparent 45%, color-mix(in srgb, var(--background) 90%, transparent) 100%),
     url("background.svg");
   min-height: 100vh;
   box-sizing: border-box;
-  color: #B48C3A;              /* normal text: dark gold (the style guide's halo colour, reused for text) */
+  color: var(--halo);              /* normal text: dark gold (the style guide's halo colour, reused for text) */
   font-family: "Jaro", Georgia, serif;   /* chaos text font; Georgia only if it fails to load */
   font-size: 20px;
   text-align: center;
@@ -41,7 +41,7 @@ body {
 
 /* The big heading */
 h1 {
-  color: #E2B24A;              /* bright gold (outline colour) */
+  color: var(--gold);              /* bright gold (outline colour) */
   font-family: "Syne Tactile", Georgia, serif;   /* chaos font; Georgia only if it fails to load */
   font-size: 40px;
   letter-spacing: 2px;
@@ -66,11 +66,11 @@ h1 {
   padding: 8px 16px;
   font-family: "Jaro", Georgia, serif;
   font-size: 20px;
-  color: #E2B24A;                       /* gold */
-  background-color: #0B0806;            /* chaos background */
-  border: 2px solid #E2B24A;            /* gold outline */
+  color: var(--gold);                       /* gold */
+  background-color: var(--background);            /* chaos background */
+  border: 2px solid var(--gold);            /* gold outline */
   border-radius: 0;                     /* square corners */
-  box-shadow: 3px 3px 0 #B48C3A;        /* the second, dark-gold line */
+  box-shadow: 3px 3px 0 var(--halo);        /* the second, dark-gold line */
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -78,11 +78,11 @@ h1 {
 /* While you press it, the button moves onto its second line, so it feels pressed. */
 .control-button:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 #B48C3A;
+  box-shadow: 1px 1px 0 var(--halo);
 }
 
 .control-button:focus-visible {
-  outline: 2px solid #F7D774;           /* light gold frame for keyboard players */
+  outline: 2px solid var(--restored-halo);           /* light gold frame for keyboard players */
   outline-offset: 4px;
 }
 
@@ -102,16 +102,16 @@ h1 {
   padding: 6px 12px;
   font-family: "Jaro", Georgia, serif;
   font-size: 18px;
-  color: #E2B24A;                       /* gold */
-  background-color: #0B0806;            /* chaos background */
-  border: 2px solid #E2B24A;            /* gold outline */
+  color: var(--gold);                       /* gold */
+  background-color: var(--background);            /* chaos background */
+  border: 2px solid var(--gold);            /* gold outline */
   border-radius: 0;                     /* square corners */
-  box-shadow: 3px 3px 0 #B48C3A;        /* the second, dark-gold line */
+  box-shadow: 3px 3px 0 var(--halo);        /* the second, dark-gold line */
   cursor: pointer;
 }
 
 .control-select:focus-visible {
-  outline: 2px solid #F7D774;           /* light gold frame for keyboard players */
+  outline: 2px solid var(--restored-halo);           /* light gold frame for keyboard players */
   outline-offset: 4px;
 }
 
@@ -139,7 +139,7 @@ h1 {
 
 /* The stopper of a sorted bottle: dark inside, gold lines (see draw.js) */
 .stopper-body {
-  fill: #0B0806;               /* chaos background: almost black */
+  fill: var(--background);               /* chaos background: almost black */
 }
 
 /* The message line under the bottles. It always keeps room for one line,
@@ -147,14 +147,14 @@ h1 {
 .message {
   min-height: 1.5em;
   margin-top: 24px;
-  color: #E2B24A;              /* bright gold */
+  color: var(--gold);              /* bright gold */
 }
 
 /* The win message: big, in the restored-world heading font, a first glimpse of the world healing. */
 .message.win {
   font-family: "Pompiere", Georgia, serif;
   font-size: 36px;
-  color: #F7D774;              /* restored halo colour: light gold */
+  color: var(--restored-halo);              /* restored halo colour: light gold */
 }
 
 /* The button around each bottle: no grey button look, only the drawing itself. */
@@ -187,7 +187,7 @@ h1 {
 }
 /* Keyboard players see a gold frame around the bottle they are on. */
 .bottle-button:focus-visible {
-  outline: 2px solid #E2B24A;          /* gold outline */
+  outline: 2px solid var(--gold);          /* gold outline */
   outline-offset: 4px;
 }
 
@@ -195,19 +195,19 @@ h1 {
 
 /* The dark glass */
 .glass {
-  fill: #0B0806;               /* chaos background: almost black */
+  fill: var(--background);               /* chaos background: almost black */
 }
 
 /* Short pencil strokes on the layers (hatching): dark ones and light gold ones */
 .hatch-dark {
   fill: none;
-  stroke: #090705;             /* pencil lines */
+  stroke: var(--pencil);             /* pencil lines */
   stroke-width: 0.8;
   opacity: 0.55;
 }
 .hatch-light {
   fill: none;
-  stroke: #E2B24A;             /* gold */
+  stroke: var(--gold);             /* gold */
   stroke-width: 0.6;
   opacity: 0.35;
 }
@@ -215,7 +215,7 @@ h1 {
 /* Dense dark strokes on the right side: the shadow */
 .shade {
   fill: none;
-  stroke: #090705;             /* pencil lines */
+  stroke: var(--pencil);             /* pencil lines */
   stroke-width: 1;
   opacity: 0.45;
 }
@@ -223,7 +223,7 @@ h1 {
 /* A few light gold strokes on the left side: the shine on the glass */
 .highlight {
   fill: none;
-  stroke: #E2B24A;             /* gold */
+  stroke: var(--gold);             /* gold */
   stroke-width: 0.7;
   opacity: 0.45;
 }
@@ -231,7 +231,7 @@ h1 {
 /* The top of the liquid: a light, wobbly line */
 .surface {
   fill: none;
-  stroke: #E2B24A;             /* gold */
+  stroke: var(--gold);             /* gold */
   stroke-width: 1;
   opacity: 0.7;
 }
@@ -240,12 +240,12 @@ h1 {
    each a little crooked, like a pencil going over it again. */
 .outline-dark {
   fill: none;
-  stroke: #090705;             /* pencil lines */
+  stroke: var(--pencil);             /* pencil lines */
   stroke-width: 3;
 }
 .outline {
   fill: none;
-  stroke: #E2B24A;             /* gold outline */
+  stroke: var(--gold);             /* gold outline */
   stroke-width: 1.1;
   stroke-linejoin: miter;      /* sharp corners, not round */
   opacity: 0.8;
@@ -254,7 +254,7 @@ h1 {
 /* The inner gold line of the double outline: thinner and a bit softer than the outer one. */
 .outline-inner {
   fill: none;
-  stroke: #E2B24A;             /* gold outline */
+  stroke: var(--gold);             /* gold outline */
   stroke-width: 0.7;
   stroke-linejoin: miter;
   opacity: 0.65;
@@ -263,7 +263,7 @@ h1 {
 /* The rim of the fill level: a thin gold line across the glass, just above a full bottle's liquid. */
 .rim {
   fill: none;
-  stroke: #E2B24A;             /* gold outline */
+  stroke: var(--gold);             /* gold outline */
   stroke-width: 0.8;
   opacity: 0.7;
 }
@@ -271,7 +271,7 @@ h1 {
 /* The thin darker line between two layers of colour. */
 .layer-line {
   fill: none;
-  stroke: #090705;             /* pencil lines */
+  stroke: var(--pencil);             /* pencil lines */
   stroke-width: 1;
   opacity: 0.7;
 }
@@ -279,16 +279,16 @@ h1 {
 /* The layer colours: the game only says "colour 1, 2, 3...".
    Here we decide what each colour looks like (chaos colours from the style guide).
    "fill" is the paint colour inside an SVG shape. */
-.colour-1 { fill: #D9A63C; }   /* gold */
-.colour-2 { fill: #651722; }   /* crimson */
-.colour-3 { fill: #2A5246; }   /* verdigris */
-.colour-4 { fill: #7E7360; }   /* bone */
-.colour-5 { fill: #26305E; }   /* indigo */
-.colour-6 { fill: #8A4421; }   /* rust */
-.colour-7 { fill: #4A2557; }   /* amethyst */
-.colour-8 { fill: #1E4F5C; }   /* deep teal */
-.colour-9 { fill: #5A5A22; }   /* olive */
-.colour-10 { fill: #3A3F48; }  /* ash */
+.colour-1 { fill: var(--colour-1); }   /* gold */
+.colour-2 { fill: var(--colour-2); }   /* crimson */
+.colour-3 { fill: var(--colour-3); }   /* verdigris */
+.colour-4 { fill: var(--colour-4); }   /* bone */
+.colour-5 { fill: var(--colour-5); }   /* indigo */
+.colour-6 { fill: var(--colour-6); }   /* rust */
+.colour-7 { fill: var(--colour-7); }   /* amethyst */
+.colour-8 { fill: var(--colour-8); }   /* deep teal */
+.colour-9 { fill: var(--colour-9); }   /* olive */
+.colour-10 { fill: var(--colour-10); }  /* ash */
 
 /* ---------- Small screens (phones) ----------
    A media query: the rules inside only count when the screen is at most 480 pixels wide
@@ -348,7 +348,7 @@ h1 {
 /* Tiny gold ember strokes around the base of each bottle (short strokes, not dots). */
 .ember {
   fill: none;
-  stroke: #E2B24A;             /* gold */
+  stroke: var(--gold);             /* gold */
   stroke-width: 0.9;
   opacity: 0.55;
 }
@@ -399,7 +399,7 @@ p {
 .stats {
   margin: 4px 0 0;
   font-size: 16px;
-  color: #B48C3A;              /* dark gold */
+  color: var(--halo);              /* dark gold */
 }
 
 /* The Reset progress button sits at the bottom, away from the game buttons. */
