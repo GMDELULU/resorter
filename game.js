@@ -6,17 +6,19 @@
 // How many layers fit in one bottle.
 const capacity = 4;
 
-// The starting level: a list of bottles.
+// How many colours a level has, and how many empty bottles.
+const colourCount = 4;
+const emptyBottles = 2;
+
+// A spare level, only used if the computer somehow cannot make a random one.
 // Each bottle is a list of colour numbers, from BOTTOM to TOP.
 // (The last number is the top layer: the one you can pour.)
 // An empty list [] is an empty bottle.
-// "const": the starting level never changes, so Restart can always go back to it.
-const startingBottles = [
+const spareLevel = [
   [4, 3, 1, 2],
   [2, 1, 3, 4],
   [4, 3, 2, 1],
   [1, 2, 4, 3],
-  [],
   [],
   []
 ];
@@ -29,6 +31,11 @@ function copyBottles(list) {
     return bottle.slice();   // slice() copies one bottle
   });
 }
+
+// The level as it starts (made by makeRandomLevel, further down). Restart goes back to it.
+// (Careful: this runs at once. Everything makeRandomLevel needs must be written ABOVE this line,
+// except functions, which JavaScript always knows in advance.)
+let startingBottles = makeRandomLevel();
 
 // The bottles as they are now, during play. They start as a copy of the starting level.
 let bottles = copyBottles(startingBottles);
@@ -57,6 +64,8 @@ let justClosed = null;
 
 // The message when the player wins.
 const winMessage = "Order is restored! Kharosa's chaos is sorted.";
+// Added after the win message, because a new level starts by itself.
+const nextLevelMessage = "A new level is coming...";
 
 // Has the player won? true = yes, false = not yet.
 let won = false;
@@ -109,12 +118,12 @@ function topColour(bottle) {
   return bottle[bottle.length - 1];   // the last one in the list is the top
 }
 
-// whyNotPour(from, to) checks the rule. It gives back a reason why the pour is NOT allowed,
+// whyNotPour(from, to, list) checks the rule. It gives back a reason why the pour is NOT allowed,
 // or an empty text "" if the pour is allowed.
 // (The source is never empty here: tapBottle does not let you pick up an empty bottle.)
-function whyNotPour(from, to) {
-  const source = bottles[from];
-  const target = bottles[to];
+function whyNotPour(from, to, list = bottles) {
+  const source = list[from];
+  const target = list[to];
 
   if (isClosed(target)) {
     return "That bottle is sorted and closed.";
@@ -127,10 +136,12 @@ function whyNotPour(from, to) {
   }
 }
 
-// pour(from, to) moves layers: all the same top colour, as many as fit.
-function pour(from, to) {
-  const source = bottles[from];
-  const target = bottles[to];
+// pour(from, to, list) moves layers: all the same top colour, as many as fit.
+// "list = bottles" is a default value: if you leave "list" out, the real bottles are used.
+// The solver (further down) passes its own list, to try moves without touching the real game.
+function pour(from, to, list = bottles) {
+  const source = list[from];
+  const target = list[to];
   const colour = topColour(source);
 
   // Safety check: an empty bottle has nothing to pour.
@@ -192,7 +203,7 @@ function tapBottle(number) {
       }
       if (checkWin()) {
         won = true;
-        message = winMessage;
+        message = winMessage + " " + nextLevelMessage;
       }
     } else {
       message = reason;
@@ -227,4 +238,108 @@ function restart() {
   wrongBottle = null;
   won = false;
   message = "";
+}
+
+// ---------- Random levels ----------
+
+// makeRandomLevel() makes a new level and checks that it can be solved.
+// If a level cannot be solved, it simply throws it away and tries again.
+function makeRandomLevel() {
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const level = shuffledLevel();
+    // A level is no good if a bottle is already sorted at the start, or if it can't be solved.
+    if (!level.some(isClosed) && canBeSolved(level)) {
+      return level;
+    }
+  }
+  return copyBottles(spareLevel);   // (practically never needed)
+}
+
+// shuffledLevel() puts every colour "capacity" times in a pile, shuffles the pile,
+// and fills the bottles from it. Then it adds the empty bottles.
+function shuffledLevel() {
+  const pile = [];
+  for (let colour = 1; colour <= colourCount; colour++) {
+    for (let count = 0; count < capacity; count++) {
+      pile.push(colour);
+    }
+  }
+
+  // Shuffle: walk from the end of the pile to the start, and swap every layer
+  // with a layer at a random place before it (or itself). Every order is equally likely.
+  for (let place = pile.length - 1; place > 0; place--) {
+    const other = Math.floor(Math.random() * (place + 1));   // a random whole number 0..place
+    const keep = pile[place];
+    pile[place] = pile[other];
+    pile[other] = keep;
+  }
+
+  const level = [];
+  for (let bottle = 0; bottle < colourCount; bottle++) {
+    level.push(pile.slice(bottle * capacity, (bottle + 1) * capacity));
+  }
+  for (let count = 0; count < emptyBottles; count++) {
+    level.push([]);
+  }
+  return level;
+}
+
+// ---------- The solver: can this level be solved? ----------
+
+// canBeSolved(level) lets the computer try moves, like a very patient player:
+// it keeps a list of situations still to look at, and a list of situations it has already seen.
+// From every situation it tries every allowed pour. If it ever reaches a solved situation: yes.
+// If it runs out of new situations: no.
+function canBeSolved(level) {
+  const maxSituations = 100000;   // a safety limit, so the page never freezes
+  const seen = new Set();          // a Set is a list without doubles, which is very fast to search
+  const toLookAt = [level];
+  seen.add(situationKey(level));
+
+  while (toLookAt.length > 0) {
+    if (seen.size > maxSituations) {
+      return false;   // too big to check: we treat it as "no" and make another level
+    }
+    const situation = toLookAt.pop();
+    if (situation.every(isSorted)) {
+      return true;
+    }
+    for (let from = 0; from < situation.length; from++) {
+      const source = situation[from];
+      if (source.length === 0 || isClosed(source)) {
+        continue;   // nothing to pour, or a closed bottle: skip it
+      }
+      for (let to = 0; to < situation.length; to++) {
+        if (from === to || whyNotPour(from, to, situation) !== "") {
+          continue;   // not allowed
+        }
+        // Pointless: pouring a bottle that holds only one colour into an empty bottle.
+        if (situation[to].length === 0 && source.every(function (c) { return c === source[0]; })) {
+          continue;
+        }
+        const next = copyBottles(situation);
+        pour(from, to, next);
+        const key = situationKey(next);
+        if (!seen.has(key)) {
+          seen.add(key);
+          toLookAt.push(next);
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// situationKey(list) turns a situation into a short text, like "1,2,4|3,3|...".
+// The bottles are sorted first, so the same bottles in another order count as the same situation.
+function situationKey(list) {
+  return list.map(function (bottle) { return bottle.join(","); }).sort().join("|");
+}
+
+// ---------- A new level ----------
+
+// newLevel() makes a fresh random level and starts it.
+function newLevel() {
+  startingBottles = makeRandomLevel();
+  restart();
 }

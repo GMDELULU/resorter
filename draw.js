@@ -301,6 +301,40 @@ function updateScreen() {
   if (justClosed !== null && !wantsLessMotion()) {
     dropStopper(buttons[justClosed]);
   }
+
+  // Won: after a few seconds a new level starts by itself.
+  // Not won (any more, for example after Undo): stop a waiting timer.
+  if (won && newLevelTimer === null) {
+    newLevelTimer = setTimeout(startNextLevel, newLevelDelay);
+  } else if (!won && newLevelTimer !== null) {
+    clearTimeout(newLevelTimer);
+    newLevelTimer = null;
+  }
+}
+
+// ---------- The next level ----------
+
+// How long to wait after a win before the new level starts (in milliseconds: 4000 = 4 seconds).
+const newLevelDelay = 4000;
+
+// The timer that will start the new level, or null if none is waiting.
+let newLevelTimer = null;
+
+// startNextLevel() makes a new level and draws it. If the player pressed Undo in the
+// meantime, the level is not won any more, and nothing happens.
+function startNextLevel() {
+  newLevelTimer = null;
+  if (!won || pouring) {
+    return;
+  }
+  // Was the keyboard on a bottle? Then put it back on bottle 1 of the new level.
+  const keyboardWasOnBottle = document.activeElement !== null &&
+                              document.activeElement.classList.contains("bottle-button");
+  newLevel();          // the rule side (game.js)
+  keyboardBottle = 0;  // the keyboard starts at bottle 1 again
+  drawBottles();       // new buttons: the number of bottles can change
+  updateScreen();
+  moveKeyboardTo(0, keyboardWasOnBottle);
 }
 
 // ---------- The ripple: a wrong move makes the bottle wobble like water ----------
