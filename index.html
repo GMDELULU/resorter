@@ -13,6 +13,10 @@
     <!-- The playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
     <div class="bottles" id="bottles"></div>
 
+    <!-- Messages for the player, for example when a pour is not allowed.
+         aria-live: screen readers read a new message aloud. -->
+    <p class="message" id="message" aria-live="polite"></p>
+
     <!-- JavaScript, at the end so the page is loaded first.
          game.js = the data and rules. draw.js = puts them on the screen. -->
     <script src="game.js"></script>

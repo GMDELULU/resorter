@@ -195,7 +195,7 @@ function drawBottles() {
     // "click" works the same for a mouse click, a finger tap and the Enter or Space key.
     button.addEventListener("click", function () {
       tapBottle(number);         // the rule: what a tap means (in game.js)
-      showSelection();           // the look: lift the right bottle
+      updateScreen();            // the look: show what changed
       moveKeyboardTo(number, false);   // the keyboard continues from the tapped bottle
     });
 
@@ -247,6 +247,18 @@ document.getElementById("bottles").addEventListener("keydown", function (event) 
     moveKeyboardTo(next, true);
   }
 });
+
+// updateScreen() shows the newest state after a tap: the pictures, the lift and the message.
+// It keeps the buttons and only swaps the pictures inside them,
+// so the keyboard frame stays where it is.
+function updateScreen() {
+  const buttons = document.querySelectorAll(".bottle-button");
+  buttons.forEach(function (button, number) {
+    button.replaceChildren(makeBottle(bottles[number], number));
+  });
+  showSelection();
+  document.getElementById("message").textContent = message;
+}
 
 // showSelection() lifts the picked-up bottle and puts all the others down.
 // It only changes a class name; style.css decides how "lifted" looks.

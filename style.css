@@ -62,6 +62,14 @@ h1 {
   filter: drop-shadow(0 8px 10px #E2B24A40);   /* soft gold glow (gold, a quarter visible) */
 }
 
+/* The message line under the bottles. It always keeps room for one line,
+   so the page does not jump when a message appears. */
+.message {
+  min-height: 1.5em;
+  margin-top: 24px;
+  color: #E2B24A;              /* bright gold */
+}
+
 /* The button around each bottle: no grey button look, only the drawing itself. */
 .bottle-button {
   background: none;
