@@ -28,8 +28,46 @@ let selectedBottle = null;
 // An empty text "" means: no message.
 let message = "";
 
-// The bottle where the last move went wrong (it will shake), or null if nothing went wrong.
+// The bottle where the last move went wrong (it will ripple), or null if nothing went wrong.
 let wrongBottle = null;
+
+// The message when the player wins.
+const winMessage = "Order is restored! Kharosa's chaos is sorted.";
+
+// Has the player won? true = yes, false = not yet.
+let won = false;
+
+// ---------- Did I win? ----------
+
+// isSorted(bottle) checks one bottle: it is done if it is empty,
+// or if it is full AND every layer has the same colour.
+// ("Full" matters: otherwise one colour split over two half-full bottles would count as a win.)
+function isSorted(bottle) {
+  if (bottle.length === 0) {
+    return true;
+  }
+  if (bottle.length !== capacity) {
+    return false;
+  }
+  // A loop: look at every colour in this bottle, one by one.
+  for (const colour of bottle) {
+    if (colour !== bottle[0]) {
+      return false;   // a different colour: not sorted
+    }
+  }
+  return true;
+}
+
+// checkWin() checks all bottles. One bottle that is not sorted is enough to say "not yet".
+function checkWin() {
+  // A loop: look at every bottle, one by one.
+  for (const bottle of bottles) {
+    if (!isSorted(bottle)) {   // ! means "not"
+      return false;
+    }
+  }
+  return true;
+}
 
 // ---------- The pour rule ----------
 
@@ -78,6 +116,11 @@ function pour(from, to) {
 
 // The rule for a tap: the player tapped bottle "number".
 function tapBottle(number) {
+  // After a win, taps do nothing any more.
+  if (won) {
+    return;
+  }
+
   message = "";
   wrongBottle = null;
 
@@ -97,6 +140,10 @@ function tapBottle(number) {
     const reason = whyNotPour(selectedBottle, number);
     if (reason === "") {
       pour(selectedBottle, number);
+      if (checkWin()) {
+        won = true;
+        message = winMessage;
+      }
     } else {
       message = reason;
       wrongBottle = number;   // the bottle you tried to pour into shakes

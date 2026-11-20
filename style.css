@@ -70,6 +70,13 @@ h1 {
   color: #E2B24A;              /* bright gold */
 }
 
+/* The win message: big, in the restored-world heading font, a first glimpse of the world healing. */
+.message.win {
+  font-family: "Pompiere", Georgia, serif;
+  font-size: 36px;
+  color: #F7D774;              /* restored halo colour: light gold */
+}
+
 /* The button around each bottle: no grey button look, only the drawing itself. */
 .bottle-button {
   background: none;

@@ -260,7 +260,9 @@ function updateScreen() {
     button.replaceChildren(makeBottle(bottles[number], number));
   });
   showSelection();
-  document.getElementById("message").textContent = message;
+  const messageLine = document.getElementById("message");
+  messageLine.textContent = message;
+  messageLine.classList.toggle("win", won);   // a win message looks different (see style.css)
 
   if (wrongBottle !== null) {
     ripple(buttons[wrongBottle]);
@@ -280,7 +282,8 @@ const rippleStrength = 6;
 const rippleHolder = addSvgPart("svg", { width: 0, height: 0, "aria-hidden": "true" });
 rippleHolder.style.position = "absolute";
 const rippleFilter = addSvgPart("filter", {
-  id: "ripple", x: "-10%", y: "-5%", width: "120%", height: "110%"
+  id: "ripple", x: "-10%", y: "-5%", width: "120%", height: "110%",
+  "color-interpolation-filters": "sRGB"   // makes the waves bend the same in every browser
 }, rippleHolder);
 const rippleWaves = addSvgPart("feTurbulence", {
   type: "fractalNoise", baseFrequency: "0.02 0.08", numOctaves: 1, seed: 3
@@ -292,6 +295,8 @@ document.body.appendChild(rippleHolder);
 
 // The bottle that is rippling right now, so a new ripple can stop the old one first.
 let ripplingArt = null;
+// A number that goes up with every new ripple, so an old ripple knows when to stop.
+let rippleCount = 0;
 
 // ripple(button) makes the bottle inside this button wobble for a moment.
 function ripple(button) {
@@ -308,15 +313,19 @@ function ripple(button) {
   const art = button.querySelector(".bottle-art");
   art.setAttribute("filter", "url(#ripple)");
   ripplingArt = art;
+  rippleCount = rippleCount + 1;
+  const myNumber = rippleCount;
   const startTime = performance.now();
 
   // One step of the animation. The browser calls it about 60 times per second
   // (requestAnimationFrame = "call this just before you draw the next picture").
   function step(now) {
-    if (ripplingArt !== art) {
+    if (myNumber !== rippleCount) {
       return;   // a newer ripple has taken over
     }
-    const progress = (now - startTime) / rippleTime;   // 0 at the start, 1 at the end
+    // 0 at the start, 1 at the end. (Math.max: never below 0, because the browser's clock
+    // for the first step can be a tiny bit earlier than our start time.)
+    const progress = Math.max(0, (now - startTime) / rippleTime);
     if (progress >= 1) {
       rippleBend.setAttribute("scale", 0);
       art.removeAttribute("filter");
