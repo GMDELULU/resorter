@@ -352,5 +352,18 @@ function showSelection() {
   });
 }
 
+// ---------- The Undo and Restart buttons ----------
+// Same pattern as the bottles: first the rule (game.js), then show what changed.
+
+document.getElementById("undo-button").addEventListener("click", function () {
+  undo();
+  updateScreen();
+});
+
+document.getElementById("restart-button").addEventListener("click", function () {
+  restart();
+  updateScreen();
+});
+
 // Call the function once, when the page opens.
 drawBottles();

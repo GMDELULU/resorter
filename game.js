@@ -10,7 +10,8 @@ const capacity = 4;
 // Each bottle is a list of colour numbers, from BOTTOM to TOP.
 // (The last number is the top layer: the one you can pour.)
 // An empty list [] is an empty bottle.
-let bottles = [
+// "const": the starting level never changes, so Restart can always go back to it.
+const startingBottles = [
   [4, 3, 1, 2],
   [2, 1, 3, 4],
   [4, 3, 2, 1],
@@ -19,6 +20,22 @@ let bottles = [
   [],
   []
 ];
+
+// copyBottles(list) makes a real copy: new bottles with the same colours.
+// (Just writing "a = b" would NOT copy: both names would point at the same bottles,
+// and a pour would change both.)
+function copyBottles(list) {
+  return list.map(function (bottle) {
+    return bottle.slice();   // slice() copies one bottle
+  });
+}
+
+// The bottles as they are now, during play. They start as a copy of the starting level.
+let bottles = copyBottles(startingBottles);
+
+// The move history ("history" alone is already a name the browser uses): a stack of copies, one saved just before every pour.
+// Undo takes the newest one off the top of the stack.
+let moveHistory = [];
 
 // Which bottle is picked up: its number (0 = bottle 1, 1 = bottle 2...),
 // or null when no bottle is picked up. "null" means "nothing".
@@ -139,6 +156,7 @@ function tapBottle(number) {
     // A bottle is picked up and the player tapped another one: try to pour.
     const reason = whyNotPour(selectedBottle, number);
     if (reason === "") {
+      moveHistory.push(copyBottles(bottles));   // remember how it was, for Undo
       pour(selectedBottle, number);
       if (checkWin()) {
         won = true;
@@ -150,4 +168,29 @@ function tapBottle(number) {
     }
     selectedBottle = null;   // after a pour, or a wrong move, the bottle goes back down
   }
+}
+
+// ---------- Undo and Restart ----------
+
+// undo() goes back one pour. You can press it again and again, back to the start.
+function undo() {
+  selectedBottle = null;
+  wrongBottle = null;
+  if (moveHistory.length === 0) {
+    message = "Nothing to undo yet.";
+    return;
+  }
+  bottles = moveHistory.pop();   // take the newest saved copy off the stack
+  won = false;               // after an undo, the level is not won any more
+  message = "";
+}
+
+// restart() puts the level back to how it started.
+function restart() {
+  bottles = copyBottles(startingBottles);
+  moveHistory = [];
+  selectedBottle = null;
+  wrongBottle = null;
+  won = false;
+  message = "";
 }

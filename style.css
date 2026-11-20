@@ -40,6 +40,45 @@ h1 {
   letter-spacing: 2px;
 }
 
+/* ---------- The main buttons: Undo and Restart ---------- */
+
+/* The row of buttons, in the middle, with space between them. */
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* One button: square corners (angular, not round), a gold outline,
+   and a second dark-gold line just behind it, like a pencil going over it twice.
+   At least 44 x 44 pixels, so it is easy to tap with a thumb. */
+.control-button {
+  min-width: 96px;
+  min-height: 44px;
+  padding: 8px 16px;
+  font-family: "Jaro", Georgia, serif;
+  font-size: 20px;
+  color: #E2B24A;                       /* gold */
+  background-color: #0B0806;            /* chaos background */
+  border: 2px solid #E2B24A;            /* gold outline */
+  border-radius: 0;                     /* square corners */
+  box-shadow: 3px 3px 0 #B48C3A;        /* the second, dark-gold line */
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* While you press it, the button moves onto its second line, so it feels pressed. */
+.control-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #B48C3A;
+}
+
+.control-button:focus-visible {
+  outline: 2px solid #F7D774;           /* light gold frame for keyboard players */
+  outline-offset: 4px;
+}
+
 /* ---------- The playing field ---------- */
 
 /* The row of bottles. Flexbox puts them side by side,
