@@ -659,3 +659,11 @@ body {
   gap: 10px;
   white-space: nowrap;
 }
+
+/* The back posts of a shelf are further away: a little darker. The board tops a little lighter. */
+.shelf-back {
+  opacity: 0.55;
+}
+.shelf-board {
+  opacity: 0.85;
+}

@@ -18,22 +18,37 @@ function makeShelf(bottle, number) {
     height: drawHeight
   });
 
+  // The shelving unit is only as tall as the boxes it can hold: a board under every box level
+  // and a closed top board just above the highest box. (So it never looks as if more would fit.)
+  const layerHeight = liquidHeight / capacity;
+  const topBoard = bottleBottom - liquidHeight - 2;   // just above the highest box
+  const shelfTop = topBoard - 6;                      // the top of the posts
+
   // A stencil: boxes and strokes stay inside the shelf.
   const stencilName = "shelf-stencil-" + number;
   const stencil = addSvgPart("clipPath", { id: stencilName }, picture);
-  addSvgPart("rect", { x: 4, y: 6, width: bottleWidth - 8, height: 198 }, stencil);
+  addSvgPart("rect", { x: 4, y: topBoard, width: bottleWidth - 8, height: bottleBottom - topBoard + 2 }, stencil);
 
   addLightPool(picture, number, random);   // the gold light on the ground (draw.js)
 
   const art = addSvgPart("g", { class: "bottle-art" }, picture);
 
-  // The dark back wall of the shelf.
-  addSvgPart("rect", { class: "glass", x: 2, y: 2, width: bottleWidth - 4, height: 204 }, art);
+  // The dark back wall of the shelf, and the two back posts (thin, further away).
+  addSvgPart("rect", { class: "glass", x: 2, y: shelfTop, width: bottleWidth - 4, height: 208 - shelfTop - 2 }, art);
+  [[7, 9], [bottleWidth - 9, bottleWidth - 7]].forEach(function (post) {
+    const back = [[post[0], shelfTop - 3], [post[1], shelfTop - 3], [post[1], 204], [post[0], 204]];
+    addSvgPart("polygon", { class: "shelf-wood shelf-back", points: pointsText(back) }, art);
+  });
+
+  // The top surface of every board under a box level: seen from a little above, the back edge
+  // is narrower and higher than the front edge (perspective). The boxes stand in front of it.
+  for (let level = 0; level < capacity; level++) {
+    addBoardTop(art, bottleBottom - level * layerHeight, random);
+  }
 
   const glassContent = addSvgPart("g", { class: "glass-content", "clip-path": "url(#" + stencilName + ")" }, art);
 
   // ---- The boxes ----
-  const layerHeight = liquidHeight / capacity;
   let darkStrokes = "";
   let lightStrokes = "";
   bottle.forEach(function (colour, place) {
@@ -72,22 +87,37 @@ function makeShelf(bottle, number) {
 
   addSymbols(glassContent, bottle);   // colour-blind symbols, if switched on (draw.js)
 
-  // ---- The shelf: two posts and two boards, in sketchy double lines ----
-  const wood = [
-    [[0, 0], [5, 0], [5, 208], [0, 208]],                                       // left post
-    [[bottleWidth - 5, 0], [bottleWidth, 0], [bottleWidth, 208], [bottleWidth - 5, 208]],   // right post
-    [[0, 0], [bottleWidth, 0], [bottleWidth, 5], [0, 5]],                       // top board
-    [[0, 203], [bottleWidth, 203], [bottleWidth, 208], [0, 208]]                // bottom board
-  ];
-  wood.forEach(function (piece) {
-    addSvgPart("polygon", { class: "shelf-wood", points: pointsText(piece) }, art);
-    addSvgPart("path", { class: "outline", d: pencilLine(piece, 0.5, random, true) }, art);
-  });
+  // ---- In front of the boxes: the front edges of the boards, the closed top, the front posts ----
+  for (let level = 0; level < capacity; level++) {
+    addWood(art, boardFront(bottleBottom - level * layerHeight), random);
+  }
+  addBoardTop(art, topBoard, random);                 // the top board closes the shelf
+  addWood(art, boardFront(topBoard), random);
+  addWood(art, [[0, shelfTop], [4, shelfTop], [4, 208], [0, 208]], random);                         // left post
+  addWood(art, [[bottleWidth - 4, shelfTop], [bottleWidth, shelfTop], [bottleWidth, 208], [bottleWidth - 4, 208]], random);   // right post
 
+  // A sorted, closed shelf gets the gold gem, standing on the top board (draw.js draws it).
   if (isClosed(bottle)) {
-    addStopper(art, random);   // the gold gem on top: this shelf is sorted and closed (draw.js)
+    const onTop = addSvgPart("g", { transform: "translate(0 " + round(topBoard - 4) + ")" }, art);
+    addStopper(onTop, random);
   }
   return picture;
+}
+
+// boardFront(y) gives the corners of the front edge of a board whose top is at height y.
+function boardFront(y) {
+  return [[2, y], [bottleWidth - 2, y], [bottleWidth - 2, y + 3], [2, y + 3]];
+}
+
+// addBoardTop(art, y, random) draws the top surface of a board, in perspective.
+function addBoardTop(art, y, random) {
+  addWood(art, [[2, y], [bottleWidth - 2, y], [bottleWidth - 8, y - 5], [8, y - 5]], random, "shelf-board");
+}
+
+// addWood(art, corners, random, extraClass) draws one wooden piece with a sketchy gold outline.
+function addWood(art, corners, random, extraClass) {
+  addSvgPart("polygon", { class: "shelf-wood " + (extraClass || ""), points: pointsText(corners) }, art);
+  addSvgPart("path", { class: "outline", d: pencilLine(corners, 0.4, random, true) }, art);
 }
 
 // boxShape(place, layerHeight, random) gives the corners of one box: a little smaller than
