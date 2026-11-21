@@ -523,7 +523,7 @@ function showMessage() {
 // showStats() shows the level indicator at the top, and the move counter (and levels won).
 function showStats() {
   const stats = document.getElementById("stats");
-  const badge = document.getElementById("level-badge");   // the level indicator at the top
+  const badge = document.getElementById("level-badge");   // the level indicator under the title
   if (levelNumber <= maxLevel) {
     badge.textContent = "Level " + levelNumber + " of " + maxLevel;
   } else {
@@ -729,6 +729,61 @@ function setLook(look) {
   document.body.classList.toggle("theme-attic", look === "attic");
 }
 
+// ---------- The menu (lesson 20a) ----------
+
+const menuButton = document.getElementById("menu-button");
+const menu = document.getElementById("menu");
+
+// openMenu() shows the menu and puts the keyboard on its first row.
+function openMenu() {
+  menu.hidden = false;
+  menuButton.setAttribute("aria-expanded", "true");   // for screen readers: "menu, opened"
+  menu.querySelector("button").focus();
+}
+
+// closeMenu(backToButton) hides the menu. With "true", the keyboard goes back to the menu button.
+function closeMenu(backToButton) {
+  menu.hidden = true;
+  menuButton.setAttribute("aria-expanded", "false");
+  if (backToButton) {
+    menuButton.focus();
+  }
+}
+
+// The menu button opens the menu, or closes it when it is open.
+menuButton.addEventListener("click", function () {
+  if (menu.hidden) {
+    openMenu();
+  } else {
+    closeMenu(false);
+  }
+});
+
+// The Escape key closes the menu.
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape" && !menu.hidden) {
+    closeMenu(true);
+  }
+});
+
+// When the keyboard leaves the menu (Tab past its first or last row), the menu closes too.
+menu.addEventListener("focusout", function (event) {
+  const next = event.relatedTarget;   // where the keyboard goes now
+  if (next !== null && !menu.contains(next) && next !== menuButton) {
+    closeMenu(false);
+  }
+});
+
+// A tap outside the menu closes it, and does nothing else (so you never pick up a bottle by accident).
+// "true" at the end: this listener hears the tap first, before the bottle does.
+document.addEventListener("click", function (event) {
+  if (!menu.hidden && !menu.contains(event.target) && !menuButton.contains(event.target)) {
+    event.stopPropagation();
+    event.preventDefault();
+    closeMenu(false);
+  }
+}, true);
+
 // ---------- Reset progress ----------
 
 document.getElementById("reset-progress").addEventListener("click", function () {
@@ -741,6 +796,7 @@ document.getElementById("reset-progress").addEventListener("click", function () 
     return;
   }
   resetProgress();                    // save.js
+  closeMenu(true);                    // (the keyboard goes back to the menu button)
   alwaysSymbols = false;              // the settings are forgotten too
   showSwitch();
   soundOn = true;

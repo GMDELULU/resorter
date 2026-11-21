@@ -55,23 +55,26 @@ h1 {
 
 /* ---------- The main buttons: Undo and Restart ---------- */
 
-/* The row of buttons, in the middle, with space between them. */
+/* The row of buttons right under the bottles, in the middle. Far apart, so you never
+   hit Restart (all moves gone) when you wanted Undo. */
 .controls {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-top: 16px;
+  gap: 40px;
+  margin-top: 20px;
 }
 
 /* One button: square corners (angular, not round), a gold outline,
    and a second dark-gold line just behind it, like a pencil going over it twice.
-   At least 44 x 44 pixels, so it is easy to tap with a thumb. */
+   It LOOKS thin (36 pixels high), but the part you can tap is 46 pixels high (see ::before),
+   so it is still easy to tap with a thumb. */
 .control-button {
+  position: relative;
   min-width: 96px;
-  min-height: 44px;
-  padding: 8px 16px;
+  min-height: 36px;
+  padding: 4px 16px;
   font-family: "Jaro", Georgia, serif;
-  font-size: 20px;
+  font-size: 18px;
   color: var(--text-strong);                /* button text */
   background-color: var(--background);            /* the background colour of the world */
   border: 2px solid var(--gold);            /* gold outline (restored gold after a win) */
@@ -79,6 +82,16 @@ h1 {
   box-shadow: 3px 3px 0 var(--halo);        /* the second, dark-gold line */
   cursor: pointer;
   touch-action: manipulation;
+}
+
+/* The invisible tap area: 5 pixels more above and below the button. */
+.control-button::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  left: 0;
+  right: 0;
 }
 
 /* While you press it, the button moves onto its second line, so it feels pressed. */
@@ -92,33 +105,9 @@ h1 {
   outline-offset: 4px;
 }
 
-/* A row of settings under the buttons (level badge, switches). */
-.settings {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  font-size: 18px;
-}
-
-/* The select menu: the same square gold look as the buttons, and at least 44 pixels high. */
-.control-select {
-  min-height: 44px;
-  padding: 6px 12px;
-  font-family: "Jaro", Georgia, serif;
-  font-size: 18px;
-  color: var(--text-strong);                /* menu text */
-  background-color: var(--background);            /* the background colour of the world */
-  border: 2px solid var(--gold);            /* gold outline (restored gold after a win) */
-  border-radius: 0;                     /* square corners */
-  box-shadow: 3px 3px 0 var(--halo);        /* the second, dark-gold line */
-  cursor: pointer;
-}
-
-.control-select:focus-visible {
-  outline: 2px solid var(--text-strong);    /* frame for keyboard players (visible in both worlds) */
-  outline-offset: 4px;
+/* The line with the level indicator, under the story line. */
+.level-line {
+  margin: 4px 0 0;
 }
 
 /* ---------- The playing field ---------- */
@@ -392,7 +381,6 @@ h1 {
   overflow: visible;
 }
 .controls,
-.settings,
 .message,
 .stats,
 h1,
@@ -411,7 +399,7 @@ p {
   transform-origin: center;
 }
 
-/* ---------- Move counter and Reset progress (lesson 14) ---------- */
+/* ---------- Move counter (lesson 14) ---------- */
 
 /* The move counter and levels won: small, quiet gold text under the message. */
 .stats {
@@ -420,18 +408,6 @@ p {
   color: var(--text);              /* counter */
 }
 
-/* The Reset progress button sits at the bottom, away from the game buttons. */
-.footer {
-  margin-top: 28px;
-  position: relative;
-  z-index: 1;
-}
-
-/* A quieter version of the gold button (still at least 44 pixels high). */
-.small-button {
-  font-size: 15px;
-  opacity: 0.8;
-}
 
 /* The layer for the reveal ripple (sparkle.js): over the whole page, behind the sun and the bottles. */
 .ripple-layer {
@@ -456,7 +432,10 @@ p {
 body,
 h1,
 .control-button,
-.control-select,
+.menu-button,
+.menu-sheet,
+.toggle,
+.menu-item,
 .message,
 .stats {
   transition: color var(--transformation-time), background-color var(--transformation-time),
@@ -510,7 +489,8 @@ body::before {
 /* Halfway through, the fonts change to the restored fonts (sparkle.js adds "restored-fonts"). */
 .restored-fonts,
 .restored-fonts .control-button,
-.restored-fonts .control-select {
+.restored-fonts .menu-item,
+.restored-fonts .toggle {
   font-family: "Josefin Sans", Georgia, serif;
 }
 .restored-fonts h1 {
@@ -552,7 +532,7 @@ body::before {
   white-space: nowrap;
 }
 
-/* ---------- The colour-blind switch and the level indicator (top menu) ---------- */
+/* ---------- The switches (in the menu) and the level indicator ---------- */
 
 /* The level indicator: which level you are on. Plain, clear letters in strong contrast. */
 .level-badge {
@@ -644,18 +624,6 @@ body::before {
   stroke-width: 1;
 }
 
-/* The settings row may wrap onto two lines on a small phone. */
-.settings {
-  flex-wrap: wrap;
-}
-
-/* One setting: its name and its menu always stay together on one line. */
-.setting {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  white-space: nowrap;
-}
 
 /* The back posts of a shelf are further away: a little darker. The board tops a little lighter. */
 .shelf-back {
@@ -663,4 +631,98 @@ body::before {
 }
 .shelf-board {
   opacity: 0.85;
+}
+
+/* ---------- The menu (lesson 20a) ----------
+   C: everything that is not about this level. A menu button in the middle at the bottom of
+   the screen; the menu rises from the bottom, just above it (a "bottom sheet"). */
+
+/* Room at the bottom of the page, so the menu button never covers the move counter. */
+body {
+  padding-bottom: 76px;
+}
+
+/* The menu button: always in the same place, at the bottom in the middle.
+   "fixed": it stays there when you scroll. */
+.menu-button {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  width: 52px;
+  min-height: 44px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-strong);
+  background-color: var(--background);
+  border: 2px solid var(--gold);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--halo);
+  cursor: pointer;
+  touch-action: manipulation;
+  z-index: 21;                 /* above everything, also a bottle that is pouring */
+}
+.menu-button:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 4px;
+}
+
+/* The menu itself: a gold-edged panel just above the menu button. */
+.menu-sheet {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: 68px;
+  max-width: 400px;
+  margin: 0 auto;              /* in the middle on a wide screen */
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background);
+  border: 2px solid var(--gold);
+  box-shadow: 3px 3px 0 var(--halo);
+  z-index: 20;
+  animation: menu-rise 0.18s ease-out;   /* it rises a little when it opens */
+}
+.menu-sheet[hidden] {
+  display: none;
+}
+@keyframes menu-rise {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-sheet {
+    animation: none;
+  }
+}
+
+/* The rows in the menu: the switches and Reset progress. Full width, at least 48 pixels high,
+   with a thin dark-gold line between them. */
+.menu-sheet .toggle,
+.menu-item {
+  width: 100%;
+  min-height: 48px;
+  justify-content: space-between;
+  flex-direction: row-reverse;     /* the words on the left, the switch on the right */
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 1px solid var(--halo);
+  font-family: "Josefin Sans", Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-strong);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  border-bottom: none;             /* the last row */
+}
+.menu-item:focus-visible,
+.menu-sheet .toggle:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: -4px;            /* inside the row, so it is not cut off */
 }

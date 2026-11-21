@@ -13,29 +13,17 @@
     <h1>ReSorter</h1>
     <p>Kharosa has mixed up the world. Help sort it back into order.</p>
 
-    <!-- The main buttons. They are always here, in the same place, above the bottles. -->
+    <!-- The level indicator: which level you are on. -->
+    <p class="level-line"><span class="level-badge" id="level-badge">Level 1 of 100</span></p>
+
+    <!-- A: the playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
+    <div class="bottles" id="bottles"></div>
+
+    <!-- B: the buttons for this level, right under the bottles. -->
     <div class="controls">
       <button type="button" class="control-button" id="undo-button">Undo</button>
       <button type="button" class="control-button" id="restart-button">Restart</button>
     </div>
-
-    <!-- The level indicator, and the colour-blind switch. The switch says On or Off in words,
-         so you never need to see a colour to know its state. role="switch" tells screen readers
-         it is an on/off switch; aria-checked says if it is on. -->
-    <div class="settings">
-      <span class="level-badge" id="level-badge">Level 1 of 100</span>
-      <button type="button" id="symbols-switch" class="toggle" role="switch" aria-checked="false">
-        <span class="toggle-track" aria-hidden="true"><span class="toggle-knob"></span></span>
-        <span class="toggle-text">Symbols: <strong id="symbols-state">Off</strong></span>
-      </button>
-      <button type="button" id="sound-switch" class="toggle" role="switch" aria-checked="true">
-        <span class="toggle-track" aria-hidden="true"><span class="toggle-knob"></span></span>
-        <span class="toggle-text">Sound: <strong id="sound-state">On</strong></span>
-      </button>
-    </div>
-
-    <!-- The playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
-    <div class="bottles" id="bottles"></div>
 
     <!-- Messages for the player, for example when a pour is not allowed.
          aria-live: screen readers read a new message aloud. -->
@@ -44,13 +32,30 @@
     <!-- Only for screen readers (hidden on screen): says what each pour did. -->
     <p class="screen-reader-only" id="announce" aria-live="polite"></p>
 
-    <!-- The move counter and the number of levels won. -->
+    <!-- The move counter. -->
     <p class="stats" id="stats"></p>
 
-    <!-- Forget everything the game saved in this browser (privacy: the player decides). -->
-    <div class="footer">
-      <button type="button" class="control-button small-button" id="reset-progress">Reset progress</button>
+    <!-- C: the menu, for everything that is not about this level. It opens from the menu button
+         at the bottom of the screen. "hidden": closed at the start.
+         The switches say On or Off in words, so you never need to see a colour to know their state.
+         role="switch" tells screen readers it is an on/off switch; aria-checked says if it is on. -->
+    <div class="menu-sheet" id="menu" role="group" aria-label="Menu" hidden>
+      <button type="button" id="symbols-switch" class="toggle" role="switch" aria-checked="false">
+        <span class="toggle-track" aria-hidden="true"><span class="toggle-knob"></span></span>
+        <span class="toggle-text">Symbols: <strong id="symbols-state">Off</strong></span>
+      </button>
+      <button type="button" id="sound-switch" class="toggle" role="switch" aria-checked="true">
+        <span class="toggle-track" aria-hidden="true"><span class="toggle-knob"></span></span>
+        <span class="toggle-text">Sound: <strong id="sound-state">On</strong></span>
+      </button>
+      <!-- Forget everything the game saved in this browser (privacy: the player decides). -->
+      <button type="button" class="menu-item" id="reset-progress">Reset progress</button>
     </div>
+
+    <!-- The menu button (a "hamburger": three lines). aria-expanded tells screen readers
+         if the menu is open; aria-controls says which menu it opens. -->
+    <button type="button" class="menu-button" id="menu-button"
+            aria-label="Menu" aria-expanded="false" aria-controls="menu">&#9776;</button>
 
     <!-- JavaScript, at the end so the page is loaded first.
          game.js = the data and rules. save.js = saving in your own browser. sound.js = the sound effects. attic.js = the attic look. draw.js = puts them on the screen. pour.js = the pour animation. sparkle.js = stopper and firework. -->
