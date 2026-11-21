@@ -1,0 +1,14 @@
+# Private files: they stay on this PC only and never go online.
+# (git does not save or upload anything on this list.)
+
+# House rules for Claude
+CLAUDE.md
+
+# My lesson notes, requirements and glossary
+docs/
+
+# Style guide, reference drawings and inspiration images
+design/
+
+# Claude's own settings for this folder
+.claude/
