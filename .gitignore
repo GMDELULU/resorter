@@ -9,6 +9,7 @@ docs/
 
 # Style guide, reference drawings and inspiration images
 design/
+design-examples/
 
 # Claude's own settings for this folder
 .claude/
