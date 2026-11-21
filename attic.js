@@ -91,15 +91,15 @@ function makeShelf(bottle, number) {
   for (let level = 0; level < capacity; level++) {
     addWood(art, boardFront(bottleBottom - level * layerHeight), random);
   }
-  addBoardTop(art, topBoard, random);                 // the top board closes the shelf
-  addWood(art, boardFront(topBoard), random);
   addWood(art, [[0, shelfTop], [4, shelfTop], [4, 208], [0, 208]], random);                         // left post
   addWood(art, [[bottleWidth - 4, shelfTop], [bottleWidth, shelfTop], [bottleWidth, 208], [bottleWidth - 4, 208]], random);   // right post
 
-  // A sorted, closed shelf gets the gold gem, standing on the top board (draw.js draws it).
+  // A sorted shelf gets its LID: the top board that closes it. An open shelf has no lid.
+  // It has the class "stopper", so it drops on like a bottle's stopper (sparkle.js).
   if (isClosed(bottle)) {
-    const onTop = addSvgPart("g", { transform: "translate(0 " + round(topBoard - 4) + ")" }, art);
-    addStopper(onTop, random);
+    const lid = addSvgPart("g", { class: "stopper" }, art);
+    addBoardTop(lid, topBoard, random);
+    addWood(lid, boardFront(topBoard), random);
   }
   return picture;
 }
@@ -180,16 +180,33 @@ async function playBoxMove(info) {
     const flyTime = 550 * pourSpeed;     // how long one box flies (pour.js's speed setting)
     const gap = 110 * pourSpeed;         // the next box leaves a little later
     const arc = 70 * size;
-    const total = flyTime + gap * (moved - 1);
+
+    // The final box of a shelf that becomes sorted does not glide in: it flies to a point
+    // above the shelf, then DROPS in (slow start, hard landing), like Ja's example animation (a box dropping into a closet).
+    const dropping = info.closes;
+    const dropHeight = 110 * size;       // how high above its place the final box starts falling
+    const fallTime = 320 * pourSpeed;
+    const flightsEnd = flyTime + gap * (moved - 1);
+    const total = flightsEnd + (dropping ? fallTime : 0);
+    const lastBox = boxes[moved - 1];
 
     await new Promise(function (finished) {
       const startTime = performance.now();
       function frame(now) {
         const time = Math.max(0, now - startTime);
         boxes.forEach(function (box, k) {
+          const isFinal = dropping && box === lastBox;
+          // The final box flies to the point above its place; the others straight to their place.
+          const goalY = isFinal ? box.toY - dropHeight : box.toY;
           const e = slowFastSlow(Math.min(1, Math.max(0, (time - k * gap) / flyTime)));
-          const x = between(box.fromX, box.toX, e);
-          const y = between(box.fromY, box.toY, e) - Math.sin(e * Math.PI) * arc;   // the arc
+          let x = between(box.fromX, box.toX, e);
+          let y = between(box.fromY, goalY, e) - Math.sin(e * Math.PI) * arc;   // the arc
+          if (isFinal && time > flightsEnd) {
+            // The fall: it speeds up all the way down (f x f x f), so it lands with a thud.
+            const f = Math.min(1, (time - flightsEnd) / fallTime);
+            x = box.toX;
+            y = goalY + (box.toY - goalY) * f * f * f;
+          }
           box.rect.setAttribute("x", x);
           box.rect.setAttribute("y", y);
         });
@@ -209,6 +226,11 @@ async function playBoxMove(info) {
       }
       requestAnimationFrame(safeFrame);
     });
+
+    // The landing (only for the final box of a sorted shelf): squash, thud, dust.
+    if (dropping) {
+      await boxLanding(lastBox, target, size);
+    }
   } catch (problem) {
     console.error(problem);
   } finally {
@@ -221,4 +243,72 @@ async function playBoxMove(info) {
       dropStopper(target);
     }
   }
+}
+
+// ---------- The landing of the final box (based on Ja's example of a box dropping into a closet) ----------
+
+// boxLanding(box, shelf, size) plays the landing of the final box on a shelf:
+//   1. the box squashes and springs back;
+//   2. the shelf gives a short thud: a little wobble that dies down;
+//   3. the boxes below are pressed together for a moment (the top one first);
+//   4. dust puffs out at both corners: short light strokes (no dots, see the style guide).
+// It gives back a promise that is kept when the squash is finished.
+function boxLanding(box, shelf, size) {
+  // 1. Squash and spring back, from the bottom of the box.
+  box.rect.style.transformBox = "fill-box";
+  box.rect.style.transformOrigin = "50% 100%";
+  const squash = box.rect.animate([
+    { transform: "scale(1, 1)" },
+    { transform: "scale(1.12, 0.8)" },
+    { transform: "scale(0.96, 1.06)" },
+    { transform: "scale(1, 1)" }
+  ], { duration: 350, easing: "ease-out" });
+
+  // 2. The thud: the whole shelf wobbles a little.
+  shelf.animate([
+    { transform: "translate(0px, 0px)" },
+    { transform: "translate(-6px, 4px) rotate(-1deg)" },
+    { transform: "translate(5px, -2px) rotate(0.8deg)" },
+    { transform: "translate(-3px, 1px) rotate(-0.4deg)" },
+    { transform: "translate(2px, 0px) rotate(0.2deg)" },
+    { transform: "translate(0px, 0px)" }
+  ], { duration: 450, easing: "ease-out" });
+
+  // 3. The boxes below are pressed together for a moment, top one first.
+  const boxesBelow = shelf.querySelectorAll(".glass-content polygon");
+  const count = boxesBelow.length;
+  boxesBelow.forEach(function (lower, i) {
+    lower.style.transformBox = "fill-box";
+    lower.style.transformOrigin = "50% 100%";
+    lower.animate([
+      { transform: "scaleY(1)" }, { transform: "scaleY(0.93)" }, { transform: "scaleY(1)" }
+    ], { duration: 250, delay: (count - 1 - i) * 40, easing: "ease-out" });
+  });
+
+  // 4. Dust at both top corners of the box: short light strokes that fly out and fade.
+  const left = parseFloat(box.rect.getAttribute("x"));
+  const top = parseFloat(box.rect.getAttribute("y"));
+  const width = parseFloat(box.rect.getAttribute("width"));
+  const dustColour = themeColour("--ripple-glow");
+  for (let i = 0; i < 10; i++) {
+    const side = (i % 2 === 1) ? 1 : -1;
+    const startX = (side > 0) ? left + width : left;
+    const puff = addSvgPart("line", {
+      class: "spark",
+      x1: startX, y1: top, x2: startX + side * 3 * size, y2: top - 2 * size,
+      stroke: dustColour, "stroke-width": 2 * size
+    }, pourLayer);
+    const moveX = side * (20 + Math.random() * 30) * size;
+    const moveY = -(10 + Math.random() * 20) * size;
+    puff.animate([
+      { transform: "translate(0px, 0px)", opacity: 0.9 },
+      { transform: "translate(" + moveX + "px, " + moveY + "px)", opacity: 0 }
+    ], { duration: 500 + Math.random() * 200, easing: "ease-out" }).finished.then(function () {
+      puff.remove();
+    }, function () {
+      puff.remove();
+    });
+  }
+
+  return squash.finished.catch(function () {});   // (also fine if the squash was stopped)
 }

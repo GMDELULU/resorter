@@ -546,38 +546,29 @@ body::before {
   white-space: nowrap;
 }
 
-/* ---------- The colour-blind switch, in a bar at the bottom (always visible) ---------- */
+/* ---------- The colour-blind switch and the level indicator (top menu) ---------- */
 
-/* The bar stays at the bottom of the screen, also when the page scrolls. */
-.access-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;                           /* above the bottles and the special moments */
-  display: flex;
-  justify-content: center;
-  padding: 6px 12px calc(6px + env(safe-area-inset-bottom));   /* room for a phone's home bar */
-  background-color: color-mix(in srgb, var(--background) 94%, transparent);
-  border-top: 2px solid var(--gold);
+/* The level indicator: which level you are on. Plain, clear letters in strong contrast. */
+.level-badge {
+  font-family: "Josefin Sans", Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-strong);
+  padding: 6px 10px;
+  border-bottom: 2px solid var(--gold);
 }
 
-/* Room at the bottom of the page, so the bar never covers the last things on the page. */
-body {
-  padding-bottom: 80px;
-}
-
-/* The switch: a big button, easy to see and to tap (at least 44 pixels high).
-   Clear, plain letters (Josefin Sans) in strong contrast; the size grows with the screen,
-   between 16 and 20 pixels ("clamp"). */
+/* The switch: small, but still at least 44 pixels high to tap. Clear, plain letters
+   (Josefin Sans) in strong contrast: bright gold on almost black is easy to read, also for
+   colour-blind players, because it differs in lightness, not only in colour. */
 .toggle {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   min-height: 44px;
-  padding: 4px 14px;
+  padding: 2px 10px;
   font-family: "Josefin Sans", Arial, sans-serif;
-  font-size: clamp(16px, 4.4vw, 20px);
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-strong);
   background: none;
@@ -595,8 +586,8 @@ body {
    On: the knob on the right, the track filled. (The words On/Off say it too.) */
 .toggle-track {
   position: relative;
-  width: 46px;
-  height: 24px;
+  width: 36px;
+  height: 20px;
   border: 2px solid var(--text-strong);
   box-sizing: border-box;
   flex-shrink: 0;
@@ -605,8 +596,8 @@ body {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   background-color: var(--text-strong);
   transition: left 0.15s;
 }
@@ -614,7 +605,7 @@ body {
   background-color: var(--gold);
 }
 .toggle[aria-checked="true"] .toggle-knob {
-  left: 24px;
+  left: 18px;
   background-color: var(--background);
 }
 

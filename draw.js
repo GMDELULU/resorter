@@ -505,12 +505,16 @@ function showMessage() {
   showStats();
 }
 
-// showStats() shows the move counter and the levels won.
+// showStats() shows the level indicator at the top, and the move counter (and levels won).
 function showStats() {
   const stats = document.getElementById("stats");
+  const badge = document.getElementById("level-badge");   // the level indicator at the top
   if (difficultyName === "path") {
-    stats.textContent = "Level " + levelNumber + " of " + maxLevel + " · Moves: " + movesMade();
+    badge.textContent = "Level " + levelNumber + " of " + maxLevel;
+    stats.textContent = "Moves: " + movesMade();
   } else {
+    const name = difficultyName.charAt(0).toUpperCase() + difficultyName.slice(1);   // "hard" -> "Hard"
+    badge.textContent = "Free play · " + name;
     stats.textContent = "Moves: " + movesMade() + " · Levels won: " + levelsWon;
   }
 }
