@@ -1,0 +1,19 @@
+Sounds in this folder (all from Freesound, https://freesound.org)
+
+music.wav          "discretion 1Q56c" by Setuniman - https://freesound.org/s/424669/
+                   CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/). Changed: one channel, half the sample rate.
+pour.wav           "DUBECQ_Alison_2014_2015_water" by iut_Paris8 - https://freesound.org/s/259180/
+                   CC BY-NC 4.0. Changed: shortened, one channel, half the sample rate.
+bottle-sorted.mp3  "IceMagic" by GMLH - https://freesound.org/s/628548/
+                   CC BY-NC 4.0. Unchanged.
+level-won.mp3      "Twinkle Chimes" by everythingsounds - https://freesound.org/s/621784/
+                   CC BY-NC 3.0 (https://creativecommons.org/licenses/by-nc/3.0/). Unchanged.
+                   A remix of "u_chimes3" by BristolStories - https://freesound.org/s/51710/ - CC BY-NC 4.0.
+interface.wav      "Sound Effects 01 03 2015 - 6 Object 5" by B_Lamerichs - https://freesound.org/s/265399/
+                   CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changed: one channel, half the sample rate.
+wrong.mp3          "shiver" by Alivvie - https://freesound.org/s/436785/ - CC0. Unchanged.
+attic-close.wav    "Objects, Cardbox, Empty, Small, Movement, Open" by Vein_Adams - https://freesound.org/s/712428/
+                   CC0. Changed: shortened, one channel, half the sample rate.
+
+NC = non-commercial: these sounds may not be used to make money. ReSorter is free and has no ads.
+The same list is in the game: menu, Credits.

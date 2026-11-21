@@ -29,11 +29,11 @@ function dropStopper(button) {
     { transform: "translateY(3px)", opacity: 1, offset: 0.8 },   // a tiny bounce: a bit too far...
     { transform: "translateY(0px)", opacity: 1 }                 // ...and back
   ], { duration: 600, easing: "ease-in" });
-  soundSorted();                 // the chime (sound.js)
   celebrateBottle(button);       // the sun with feathers behind the bottle (further down)
   rippleFromBottle(button);      // and the reveal ripple across the screen (further down)
   setTimeout(function () {
     if (stopper.isConnected) {   // only if the stopper is still on the page (not undone meanwhile)
+      soundSorted(currentLook === "attic");   // the sorted sound when the stopper (or lid) lands (sound.js)
       firework(stopper);
     }
   }, 480);

@@ -726,3 +726,101 @@ body {
   outline: 2px solid var(--text-strong);
   outline-offset: -4px;            /* inside the row, so it is not cut off */
 }
+
+/* ---------- Credits in the menu (lesson 20b) ---------- */
+
+/* The Credits row looks like the other rows, with a line under it. */
+.credits summary {
+  border-bottom: 1px solid var(--halo);
+  list-style: none;              /* no triangle: the row itself shows it opens */
+  flex-direction: row;           /* "Credits" on the left, + or - on the right */
+}
+.credits summary::-webkit-details-marker {
+  display: none;
+}
+.credits summary::after {
+  content: "+";                  /* + when closed, - when open */
+}
+.credits[open] summary::after {
+  content: "\2212";
+}
+
+/* The list of names: smaller, plain text. It may scroll if the screen is short. */
+.credits-text {
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 4px 16px 8px;
+  font-family: "Josefin Sans", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--text);
+}
+.credits-text ul {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.credits-text li {
+  margin-bottom: 4px;
+}
+.credits-text a {
+  color: var(--text-strong);
+}
+
+/* ---------- The music volume slider in the menu (lesson 20b) ---------- */
+
+/* The row: the words on the left, the slider on the right, 48 pixels high like the other rows. */
+.menu-slider {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 4px 16px;
+  border-bottom: 1px solid var(--halo);
+  font-family: "Josefin Sans", Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+/* The slider itself: a thin gold line with a square gold knob (angular, not round).
+   The whole input is 44 pixels high, so it is easy to grab with a thumb. */
+.menu-slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 50%;
+  height: 44px;
+  margin: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.menu-slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--halo);
+}
+.menu-slider input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: var(--halo);
+}
+.menu-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;              /* centre the knob on the 4-pixel line */
+  background: var(--gold);
+  border: 2px solid var(--background);
+  border-radius: 0;
+}
+.menu-slider input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--gold);
+  border: 2px solid var(--background);
+  border-radius: 0;
+}
+.menu-slider input[type="range"]:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 2px;
+}

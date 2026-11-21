@@ -224,3 +224,35 @@ function saveSetting(name, value) {
     // saving not allowed: the setting just lasts until the page closes
   }
 }
+
+// loadNumberSetting(name, standard, lowest, highest) reads a setting that is a whole number,
+// like the music volume (0 to 100). Anything else, or a number outside lowest..highest,
+// gives back "standard". (Saved data is checked: never trusted blindly.)
+function loadNumberSetting(name, standard, lowest, highest) {
+  try {
+    const settings = JSON.parse(localStorage.getItem(settingsKey));
+    if (settings !== null && typeof settings === "object") {
+      const value = settings[name];
+      if (Number.isInteger(value) && value >= lowest && value <= highest) {
+        return value;
+      }
+    }
+  } catch (problem) {
+    // unreadable: use the standard value
+  }
+  return standard;
+}
+
+// saveNumberSetting(name, value) saves one whole-number setting.
+function saveNumberSetting(name, value) {
+  try {
+    let settings = JSON.parse(localStorage.getItem(settingsKey));
+    if (settings === null || typeof settings !== "object" || Array.isArray(settings)) {
+      settings = {};
+    }
+    settings[name] = Math.round(Number(value)) || 0;
+    localStorage.setItem(settingsKey, JSON.stringify(settings));
+  } catch (problem) {
+    // saving not allowed: the setting just lasts until the page closes
+  }
+}

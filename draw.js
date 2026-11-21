@@ -412,7 +412,7 @@ function drawBottles() {
           soundPour(0.3, 0);       // a short pour sound (sound.js)
         }
         if (lastPour !== null && lastPour.closes) {
-          soundSorted();
+          soundSorted(currentLook === "attic");
           softGlow(button);      // less motion: a soft warm glow instead of the ripple (sparkle.js)
         }
       }
@@ -700,9 +700,7 @@ soundSwitch.addEventListener("click", function () {
   soundOn = !soundOn;                   // (sound.js)
   saveSetting("soundOn", soundOn);      // remember it (save.js)
   showSoundSwitch();
-  if (soundOn) {
-    soundPickUp();                      // a tiny click, so you hear that sound is on
-  } else {
+  if (!soundOn) {
     stopAllSounds();                    // silence at once, also a pour that is still playing
   }
 });
@@ -712,6 +710,40 @@ function showSoundSwitch() {
   soundSwitch.setAttribute("aria-checked", soundOn ? "true" : "false");
   document.getElementById("sound-state").textContent = soundOn ? "On" : "Off";
 }
+
+// ---------- The music volume slider (lesson 20b) ----------
+
+const musicSlider = document.getElementById("music-level");
+showMusicLevel();
+
+// "input" happens many times while you slide, so the volume follows your finger.
+musicSlider.addEventListener("input", function () {
+  // The slider gives text, like "35": turn it into a whole number from 0 to 100.
+  const level = Math.max(0, Math.min(100, Math.round(Number(musicSlider.value)) || 0));
+  setMusicLevel(level);                     // (sound.js)
+  saveNumberSetting("musicLevel", level);   // remember it (save.js)
+  showMusicLevel();
+});
+
+// showMusicLevel() puts the slider in the right place and shows the level in words,
+// also for screen readers ("Off" at 0).
+function showMusicLevel() {
+  musicSlider.value = musicLevel;
+  const words = (musicLevel === 0) ? "Off" : musicLevel + "%";
+  document.getElementById("music-level-text").textContent = words;
+  musicSlider.setAttribute("aria-valuetext", words);
+}
+
+// ---------- The interface sound ----------
+// Every tap on a button outside the playing field (Undo, Restart, the menu button, the rows in
+// the menu, Credits) gives the interface sound. One listener for all of them: "closest" finds
+// out if the tap was on (or inside) one of them. It runs after the button's own work, so switching
+// the sound ON already plays it, and switching it off is silent.
+document.addEventListener("click", function (event) {
+  if (event.target.closest(".control-button, .menu-button, .toggle, .menu-item, .credits summary")) {
+    soundInterface();   // (sound.js)
+  }
+});
 
 // redrawAllBottles() draws every (not busy) bottle again, even if its layers did not change.
 function redrawAllBottles() {
@@ -801,6 +833,8 @@ document.getElementById("reset-progress").addEventListener("click", function () 
   showSwitch();
   soundOn = true;
   showSoundSwitch();
+  setMusicLevel(standardMusicLevel);   // the music volume back to normal
+  showMusicLevel();
   setLook(lookForLevel(levelNumber));   // level 1 again, so its look
   keyboardBottle = 0;
   drawBottles();
