@@ -14,10 +14,55 @@ const difficulties = {
   hard:   { colours: 6, empty: 2 }
 };
 
+// ---------- The level path: 100 levels, the same for everyone (lesson 17b) ----------
+
+const maxLevel = 100;
+
+// The level the player is on, and the highest level reached so far (both are saved).
+let levelNumber = 1;
+let highestLevel = 1;
+
+// levelSettings(n) is the difficulty curve: how many colours and empty bottles level n has.
+// It starts gently and slowly grows. (Always 2 empty bottles, so a phone needs at most 2 rows.)
+// (If you ever change this curve, also raise saveVersion in save.js: saved path games
+// were made with the old curve.)
+function levelSettings(n) {
+  let colours;
+  if (n <= 5) {
+    colours = 3;          // levels 1-5: learn the game
+  } else if (n <= 20) {
+    colours = 4;          // 6-20
+  } else if (n <= 40) {
+    colours = 5;          // 21-40
+  } else if (n <= 60) {
+    colours = 6;          // 41-60
+  } else if (n <= 90) {
+    colours = 7;          // 61-90
+  } else {
+    colours = 8;          // 91-100
+  }
+  return { colours: colours, empty: 2 };
+}
+
+// levelRandom(n) gives the dice for level n. It always starts from the same seed for the
+// same level number, so level 37 is the same level for every player.
+function levelRandom(n) {
+  return makeSeededRandom(500009 + n * 7919);
+}
+
+// makeSeededRandom(seed): a dice that always throws the same numbers for the same seed.
+function makeSeededRandom(seed) {
+  let state = seed;
+  return function () {
+    state = (state * 16807) % 2147483647;
+    return (state - 1) / 2147483646;
+  };
+}
+
 // How many colours the current level has, and how many empty bottles. ("let": they change
-// when the player picks another difficulty.) The game starts on easy.
-let colourCount = difficulties.easy.colours;
-let emptyBottles = difficulties.easy.empty;
+// with the level or difficulty.) The game starts on level 1 of the path.
+let colourCount = levelSettings(1).colours;
+let emptyBottles = levelSettings(1).empty;
 
 // The most extra empty bottles makeRandomLevel may add when a level is very hard to make
 // (save.js checks this too).
@@ -48,7 +93,7 @@ function copyBottles(list) {
 // The level as it starts (made by makeRandomLevel, further down). Restart goes back to it.
 // (Careful: this runs at once. Everything makeRandomLevel needs must be written ABOVE this line,
 // except functions, which JavaScript always knows in advance.)
-let startingBottles = makeRandomLevel();
+let startingBottles = makeRandomLevel(levelRandom(1));
 
 // The bottles as they are now, during play. They start as a copy of the starting level.
 let bottles = copyBottles(startingBottles);
@@ -83,8 +128,8 @@ let won = false;
 // How many levels the player has won (it is saved, see save.js).
 let levelsWon = 0;
 
-// The name of the current difficulty ("easy", "medium" or "hard").
-let difficultyName = "easy";
+// The name of the current difficulty: "path" (the 100 levels) or "easy", "medium", "hard" (free play).
+let difficultyName = "path";
 
 // movesMade() gives the number of pours in this level. Undo takes one off.
 function movesMade() {
@@ -222,7 +267,10 @@ function tapBottle(number) {
       if (checkWin()) {
         won = true;
         levelsWon = levelsWon + 1;
-        message = winMessage + " " + nextLevelMessage;
+        message = winMessage + " " + nextLevelText();
+        if (difficultyName === "path") {
+          highestLevel = Math.max(highestLevel, Math.min(levelNumber + 1, maxLevel));
+        }
       }
       saveProgress();   // remember this in the browser (save.js)
     } else {
@@ -276,14 +324,19 @@ function restart() {
 
 // makeRandomLevel() makes a new level and checks that it can be solved.
 // If a level cannot be solved, it simply throws it away and tries again.
-function makeRandomLevel() {
+function makeRandomLevel(random = Math.random) {
   // Normally a good level is found at once. With very many colours and few empty bottles it can
   // take long, so after 2 seconds we add one extra empty bottle (that makes it easier to solve)
   // and try again. So the page never freezes for long, and the level is always solvable.
+  // For a path level (seeded dice) we count tries instead of seconds: then level 37 is the same
+  // on a slow phone and on a fast laptop.
+  const seeded = (random !== Math.random);
   for (let extraEmpty = 0; extraEmpty <= maxExtraEmpty; extraEmpty++) {
     const stopTime = performance.now() + 2000;
-    while (performance.now() < stopTime) {
-      const level = shuffledLevel(extraEmpty);
+    let tries = 0;
+    while (seeded ? tries < 5000 : performance.now() < stopTime) {
+      tries = tries + 1;
+      const level = shuffledLevel(extraEmpty, random);
       // A level is no good if a bottle is already sorted at the start, or if it can't be solved.
       if (!level.some(isClosed) && canBeSolved(level)) {
         return level;
@@ -295,7 +348,7 @@ function makeRandomLevel() {
 
 // shuffledLevel() puts every colour "capacity" times in a pile, shuffles the pile,
 // and fills the bottles from it. Then it adds the empty bottles.
-function shuffledLevel(extraEmpty = 0) {
+function shuffledLevel(extraEmpty = 0, random = Math.random) {
   const pile = [];
   for (let colour = 1; colour <= colourCount; colour++) {
     for (let count = 0; count < capacity; count++) {
@@ -306,7 +359,7 @@ function shuffledLevel(extraEmpty = 0) {
   // Shuffle: walk from the end of the pile to the start, and swap every layer
   // with a layer at a random place before it (or itself). Every order is equally likely.
   for (let place = pile.length - 1; place > 0; place--) {
-    const other = Math.floor(Math.random() * (place + 1));   // a random whole number 0..place
+    const other = Math.floor(random() * (place + 1));   // a random whole number 0..place
     const keep = pile[place];
     pile[place] = pile[other];
     pile[other] = keep;
@@ -374,20 +427,62 @@ function situationKey(list) {
   return list.map(function (bottle) { return bottle.join(","); }).sort().join("|");
 }
 
+// nextLevelText() is the second half of the win message: what comes next.
+function nextLevelText() {
+  if (difficultyName !== "path") {
+    return nextLevelMessage;
+  }
+  if (levelNumber < maxLevel) {
+    return "Level " + (levelNumber + 1) + " is coming...";
+  }
+  return "You restored the whole world: all " + maxLevel + " levels are done!";
+}
+
 // ---------- A new level ----------
 
-// newLevel() makes a fresh random level and starts it.
+// newLevel() starts a level in the current mode: on the level path the current level number,
+// in free play a fresh random level.
 function newLevel() {
-  startingBottles = makeRandomLevel();
+  if (difficultyName === "path") {
+    startPathLevel(levelNumber);
+  } else {
+    startingBottles = makeRandomLevel();
+    restart();
+  }
+}
+
+// startPathLevel(n) starts level n of the path: always the same level for the same number.
+function startPathLevel(n) {
+  levelNumber = n;
+  colourCount = levelSettings(n).colours;
+  emptyBottles = levelSettings(n).empty;
+  startingBottles = makeRandomLevel(levelRandom(n));
   restart();
+}
+
+// nextLevel() is what happens after a win: on the path, the next level number;
+// after level 100, free play on Hard. In free play, a new random level.
+function nextLevel() {
+  if (difficultyName === "path" && levelNumber < maxLevel) {
+    startPathLevel(levelNumber + 1);
+  } else if (difficultyName === "path") {
+    setDifficulty("hard");   // all 100 done: on to free play
+  } else {
+    newLevel();
+  }
 }
 
 // ---------- Difficulty ----------
 
-// setDifficulty(name) switches to another difficulty ("easy", "medium", "hard")
+// setDifficulty(name) switches to the level path ("path") or a free-play difficulty ("easy", "medium", "hard")
 // and starts a new level with it. The name comes from the select menu on the page:
 // we check it is a real difficulty before we use it (data from outside the code is not trusted).
 function setDifficulty(name) {
+  if (name === "path") {
+    difficultyName = "path";
+    startPathLevel(levelNumber);   // continue the path where the player was
+    return true;
+  }
   if (!Object.hasOwn(difficulties, name)) {
     return false;   // not a difficulty we know: do nothing
   }

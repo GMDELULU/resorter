@@ -20,7 +20,9 @@ function saveProgress() {
     startingBottles: startingBottles,
     bottles: bottles,
     moveHistory: moveHistory,
-    levelsWon: levelsWon
+    levelsWon: levelsWon,
+    levelNumber: levelNumber,     // the level on the path
+    highestLevel: highestLevel    // the highest level reached on the path
   };
   try {
     localStorage.setItem(saveKey, JSON.stringify(data));
@@ -62,8 +64,10 @@ function loadProgress() {
 
   // Everything checked: use it.
   difficultyName = data.difficulty;
-  colourCount = difficulties[data.difficulty].colours;
-  emptyBottles = difficulties[data.difficulty].empty;
+  levelNumber = savedLevel(data.levelNumber);
+  highestLevel = Math.max(levelNumber, savedLevel(data.highestLevel));
+  colourCount = settingsFor(data.difficulty, levelNumber).colours;
+  emptyBottles = settingsFor(data.difficulty, levelNumber).empty;
   startingBottles = copyBottles(data.startingBottles);
   bottles = copyBottles(data.bottles);
   moveHistory = data.moveHistory.map(copyBottles);
@@ -71,8 +75,19 @@ function loadProgress() {
 
   // A level that was already won when the page closed: start a new one.
   if (checkWin()) {
-    newLevel();
+    nextLevel();
   }
+}
+
+// savedLevel(value): a level number from a save. Older saves have none: then level 1.
+function savedLevel(value) {
+  return (value === undefined) ? 1 : value;
+}
+
+// settingsFor(difficulty, level) gives the colours and empty bottles for a difficulty name,
+// or for a level of the path.
+function settingsFor(difficulty, level) {
+  return (difficulty === "path") ? levelSettings(level) : difficulties[difficulty];
 }
 
 // ---------- Checking saved data (never trust it blindly) ----------
@@ -82,14 +97,21 @@ function isGoodSave(data) {
   if (typeof data !== "object" || data === null || data.version !== saveVersion) {
     return false;
   }
-  if (typeof data.difficulty !== "string" || !Object.hasOwn(difficulties, data.difficulty)) {
+  if (typeof data.difficulty !== "string" ||
+      (data.difficulty !== "path" && !Object.hasOwn(difficulties, data.difficulty))) {
     return false;
+  }
+  // Level numbers: missing (older saves) or a whole number from 1 to maxLevel.
+  for (const value of [data.levelNumber, data.highestLevel]) {
+    if (value !== undefined && (!Number.isInteger(value) || value < 1 || value > maxLevel)) {
+      return false;
+    }
   }
   if (!Number.isInteger(data.levelsWon) || data.levelsWon < 0 || data.levelsWon > 1000000) {
     return false;
   }
-  const colours = difficulties[data.difficulty].colours;
-  const empty = difficulties[data.difficulty].empty;
+  const colours = settingsFor(data.difficulty, savedLevel(data.levelNumber)).colours;
+  const empty = settingsFor(data.difficulty, savedLevel(data.levelNumber)).empty;
   if (!isGoodLevel(data.startingBottles, colours, empty) || !isGoodLevel(data.bottles, colours, empty)) {
     return false;
   }
@@ -142,10 +164,12 @@ function isGoodLevel(level, colours, empty) {
 
 // ---------- Reset progress ----------
 
-// resetProgress() forgets everything and starts fresh: easy, no levels won.
+// resetProgress() forgets everything and starts fresh: level 1 of the path, no levels won.
 function resetProgress() {
   levelsWon = 0;
-  setDifficulty("easy");   // this starts a new level (and would save it)...
+  levelNumber = 1;
+  highestLevel = 1;
+  setDifficulty("path");   // back to level 1 of the path (this would save it)...
   forgetProgress();        // ...so we remove the save again afterwards: nothing is stored now
   try {
     localStorage.removeItem(settingsKey);   // and the settings, like "always show symbols"

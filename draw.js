@@ -507,8 +507,12 @@ function showMessage() {
 
 // showStats() shows the move counter and the levels won.
 function showStats() {
-  document.getElementById("stats").textContent =
-    "Moves: " + movesMade() + " · Levels won: " + levelsWon;
+  const stats = document.getElementById("stats");
+  if (difficultyName === "path") {
+    stats.textContent = "Level " + levelNumber + " of " + maxLevel + " · Moves: " + movesMade();
+  } else {
+    stats.textContent = "Moves: " + movesMade() + " · Levels won: " + levelsWon;
+  }
 }
 
 // ---------- The next level ----------
@@ -535,7 +539,8 @@ function startNextLevel() {
   const keyboardWasOnBottle = document.activeElement !== null &&
                               document.activeElement.classList.contains("bottle-button");
   endTransformation();   // the new level starts in the chaos world again
-  newLevel();          // the rule side (game.js)
+  nextLevel();         // the rule side (game.js): the next level of the path, or a new random one
+  document.getElementById("difficulty").value = difficultyName;   // (after level 100 it is Hard)
   keyboardBottle = 0;  // the keyboard starts at bottle 1 again
   drawBottles();       // new buttons: the number of bottles can change
   updateScreen();
