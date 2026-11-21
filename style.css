@@ -86,7 +86,7 @@ h1 {
   outline-offset: 4px;
 }
 
-/* The difficulty menu, in a row under the buttons. */
+/* A row of settings under the buttons (level badge, switches). */
 .settings {
   display: flex;
   justify-content: center;

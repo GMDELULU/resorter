@@ -2,7 +2,7 @@
    The same game, another look: each bottle is an old wooden shelf, each layer is a painted box.
    The box colours are the same colour numbers as the liquid (so a level looks the same to the rules),
    and all colours still come from the style guide. Only the extra attic colours are added here.
-   The page gets the class "theme-attic" when the player picks this look (draw.js). */
+   The page gets the class "theme-attic" on the levels that use this look (draw.js: looksInTurn). */
 
 .theme-attic {
   --shelf-wood: var(--colour-4);            /* the shelf posts and boards: bone (colour 4, chaos) */

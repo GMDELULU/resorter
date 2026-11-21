@@ -19,27 +19,6 @@
       <button type="button" class="control-button" id="restart-button">Restart</button>
     </div>
 
-    <!-- The difficulty: a select menu (a drop-down list). Each <option> has a value for the code
-         (it must match a name in "difficulties" in game.js) and a text for the player. -->
-    <div class="settings">
-      <span class="setting">
-        <label for="difficulty">Difficulty</label>
-        <select id="difficulty" class="control-select" autocomplete="off">
-          <option value="path">Level path</option>
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-      </span>
-      <span class="setting">
-        <label for="look">Look</label>
-        <select id="look" class="control-select" autocomplete="off">
-          <option value="liquid">Bottles</option>
-          <option value="attic">Attic boxes</option>
-        </select>
-      </span>
-    </div>
-
     <!-- The level indicator, and the colour-blind switch. The switch says On or Off in words,
          so you never need to see a colour to know its state. role="switch" tells screen readers
          it is an on/off switch; aria-checked says if it is on. -->

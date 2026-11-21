@@ -6,21 +6,17 @@
 // How many layers fit in one bottle.
 const capacity = 4;
 
-// The difficulty settings. More colours means harder.
-// Each one is an object: how many colours, and how many empty bottles.
-const difficulties = {
-  easy:   { colours: 4, empty: 2 },
-  medium: { colours: 5, empty: 2 },
-  hard:   { colours: 6, empty: 2 }
-};
+// ---------- The level path: the same levels for everyone (lesson 17b) ----------
 
-// ---------- The level path: 100 levels, the same for everyone (lesson 17b) ----------
-
+// The path has 100 levels that slowly get harder. After level 100 the levels stay
+// as hard as level 100, and the level number keeps counting: 101, 102...
 const maxLevel = 100;
 
-// The level the player is on, and the highest level reached so far (both are saved).
+// The highest level number a save may hold (a safety limit for checking saved data).
+const highestLevelNumber = 1000000;
+
+// The level the player is on (it is saved).
 let levelNumber = 1;
-let highestLevel = 1;
 
 // levelSettings(n) is the difficulty curve: how many colours and empty bottles level n has.
 // It starts gently and slowly grows. (Always 2 empty bottles, so a phone needs at most 2 rows.)
@@ -39,7 +35,7 @@ function levelSettings(n) {
   } else if (n <= 90) {
     colours = 7;          // 61-90
   } else {
-    colours = 8;          // 91-100
+    colours = 8;          // 91 and up
   }
   return { colours: colours, empty: 2 };
 }
@@ -60,7 +56,7 @@ function makeSeededRandom(seed) {
 }
 
 // How many colours the current level has, and how many empty bottles. ("let": they change
-// with the level or difficulty.) The game starts on level 1 of the path.
+// with the level.) The game starts on level 1 of the path.
 let colourCount = levelSettings(1).colours;
 let emptyBottles = levelSettings(1).empty;
 
@@ -119,8 +115,6 @@ let lastPour = null;
 
 // The message when the player wins.
 const winMessage = "Order is restored! Kharosa's chaos is sorted.";
-// Added after the win message, because a new level starts by itself.
-const nextLevelMessage = "A new level is coming...";
 
 // Has the player won? true = yes, false = not yet.
 let won = false;
@@ -128,8 +122,6 @@ let won = false;
 // How many levels the player has won (it is saved, see save.js).
 let levelsWon = 0;
 
-// The name of the current difficulty: "path" (the 100 levels) or "easy", "medium", "hard" (free play).
-let difficultyName = "path";
 
 // movesMade() gives the number of pours in this level. Undo takes one off.
 function movesMade() {
@@ -272,9 +264,6 @@ function tapBottle(number) {
         won = true;
         levelsWon = levelsWon + 1;
         message = winMessage + " " + nextLevelText();
-        if (difficultyName === "path") {
-          highestLevel = Math.max(highestLevel, Math.min(levelNumber + 1, maxLevel));
-        }
       }
       saveProgress();   // remember this in the browser (save.js)
     } else {
@@ -433,26 +422,18 @@ function situationKey(list) {
 
 // nextLevelText() is the second half of the win message: what comes next.
 function nextLevelText() {
-  if (difficultyName !== "path") {
-    return nextLevelMessage;
+  if (levelNumber === maxLevel) {
+    return "You restored the whole world: all " + maxLevel + " levels are done! Level " +
+           (levelNumber + 1) + " is coming...";
   }
-  if (levelNumber < maxLevel) {
-    return "Level " + (levelNumber + 1) + " is coming...";
-  }
-  return "You restored the whole world: all " + maxLevel + " levels are done!";
+  return "Level " + (levelNumber + 1) + " is coming...";
 }
 
 // ---------- A new level ----------
 
-// newLevel() starts a level in the current mode: on the level path the current level number,
-// in free play a fresh random level.
+// newLevel() starts the level the player is on.
 function newLevel() {
-  if (difficultyName === "path") {
-    startPathLevel(levelNumber);
-  } else {
-    startingBottles = makeRandomLevel();
-    restart();
-  }
+  startPathLevel(levelNumber);
 }
 
 // startPathLevel(n) starts level n of the path: always the same level for the same number.
@@ -464,35 +445,8 @@ function startPathLevel(n) {
   restart();
 }
 
-// nextLevel() is what happens after a win: on the path, the next level number;
-// after level 100, free play on Hard. In free play, a new random level.
+// nextLevel() is what happens after a win: the next level number.
+// (After level 100 levelSettings stays the same, so the levels stay as hard.)
 function nextLevel() {
-  if (difficultyName === "path" && levelNumber < maxLevel) {
-    startPathLevel(levelNumber + 1);
-  } else if (difficultyName === "path") {
-    setDifficulty("hard");   // all 100 done: on to free play
-  } else {
-    newLevel();
-  }
-}
-
-// ---------- Difficulty ----------
-
-// setDifficulty(name) switches to the level path ("path") or a free-play difficulty ("easy", "medium", "hard")
-// and starts a new level with it. The name comes from the select menu on the page:
-// we check it is a real difficulty before we use it (data from outside the code is not trusted).
-function setDifficulty(name) {
-  if (name === "path") {
-    difficultyName = "path";
-    startPathLevel(levelNumber);   // continue the path where the player was
-    return true;
-  }
-  if (!Object.hasOwn(difficulties, name)) {
-    return false;   // not a difficulty we know: do nothing
-  }
-  difficultyName = name;
-  colourCount = difficulties[name].colours;
-  emptyBottles = difficulties[name].empty;
-  newLevel();
-  return true;
+  startPathLevel(levelNumber + 1);
 }

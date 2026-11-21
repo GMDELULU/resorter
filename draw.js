@@ -31,9 +31,19 @@ const colourSymbols = [
 const colourNames = ["gold", "crimson", "verdigris", "bone", "indigo",
                      "rust", "amethyst", "deep teal", "olive", "ash"];
 
-// The look: "liquid" (bottles) or "attic" (shelves with boxes). Saved as a setting (save.js).
-const looks = ["liquid", "attic"];
-let currentLook = loadChoice("look", looks, "liquid");
+// The looks take turns, one per level (round robin): level 1 the first look, level 2 the second,
+// and so on; after the last look, the first one comes again. To add a look, add it to the list.
+// "liquid" = bottles, "attic" = shelves with boxes.
+const looksInTurn = ["liquid", "attic"];
+
+// lookForLevel(n) gives the look of level n. % ("remainder") makes the count go round:
+// with 2 looks, level 1 gives 0, level 2 gives 1, level 3 gives 0 again...
+function lookForLevel(n) {
+  return looksInTurn[(n - 1) % looksInTurn.length];
+}
+
+// The look of the level on the screen now.
+let currentLook = lookForLevel(levelNumber);
 document.body.classList.toggle("theme-attic", currentLook === "attic");
 
 // Show the symbols? Always from 6 colours on (style guide), or always if the player switched them on.
@@ -514,14 +524,12 @@ function showMessage() {
 function showStats() {
   const stats = document.getElementById("stats");
   const badge = document.getElementById("level-badge");   // the level indicator at the top
-  if (difficultyName === "path") {
+  if (levelNumber <= maxLevel) {
     badge.textContent = "Level " + levelNumber + " of " + maxLevel;
-    stats.textContent = "Moves: " + movesMade();
   } else {
-    const name = difficultyName.charAt(0).toUpperCase() + difficultyName.slice(1);   // "hard" -> "Hard"
-    badge.textContent = "Free play · " + name;
-    stats.textContent = "Moves: " + movesMade() + " · Levels won: " + levelsWon;
+    badge.textContent = "Level " + levelNumber;   // after the path: the count goes on
   }
+  stats.textContent = "Moves: " + movesMade();
 }
 
 // ---------- The next level ----------
@@ -548,8 +556,8 @@ function startNextLevel() {
   const keyboardWasOnBottle = document.activeElement !== null &&
                               document.activeElement.classList.contains("bottle-button");
   endTransformation();   // the new level starts in the chaos world again
-  nextLevel();         // the rule side (game.js): the next level of the path, or a new random one
-  document.getElementById("difficulty").value = difficultyName;   // (after level 100 it is Hard)
+  nextLevel();         // the rule side (game.js): the next level
+  setLook(lookForLevel(levelNumber));   // the look of the new level
   keyboardBottle = 0;  // the keyboard starts at bottle 1 again
   drawBottles();       // new buttons: the number of bottles can change
   updateScreen();
@@ -650,9 +658,7 @@ function showSelection() {
 
 document.getElementById("undo-button").addEventListener("click", function () {
   if (busyBottles.size > 0) {
-    message = "Wait until the pour is finished.";   // wait until all pour animations are finished
-    showMessage();
-    return;
+    return;   // wait until all pour animations are finished
   }
   undo();
   updateScreen();
@@ -660,40 +666,11 @@ document.getElementById("undo-button").addEventListener("click", function () {
 
 document.getElementById("restart-button").addEventListener("click", function () {
   if (busyBottles.size > 0) {
-    message = "Wait until the pour is finished.";
-    showMessage();
     return;
   }
   restartLevel();   // (takes back a win first, so it is not counted twice)
   updateScreen();
 });
-
-// ---------- The difficulty menu ----------
-
-// "change" is the event when the player picks another option in the select menu.
-document.getElementById("difficulty").addEventListener("change", function (event) {
-  const menu = event.target;
-  if (busyBottles.size > 0) {
-    menu.value = difficultyName;      // wait until the pours are finished: put the menu back
-    return;
-  }
-  // A new difficulty starts a new level. If the player already made moves, ask first.
-  // (confirm shows a small question box with OK and Cancel; it gives true for OK.)
-  if (moveHistory.length > 0 && !won &&
-      !confirm("Start a new level? The moves you made in this level will be lost.")) {
-    menu.value = difficultyName;      // Cancel: put the menu back
-    return;
-  }
-  if (setDifficulty(menu.value)) {    // the rule side (game.js); it checks the name
-    keyboardBottle = 0;
-    drawBottles();                    // new buttons: the number of bottles changes
-    updateScreen();
-  }
-});
-
-// The menu shows the current difficulty (also after a saved game was loaded,
-// and a browser sometimes remembers an old choice after F5).
-document.getElementById("difficulty").value = difficultyName;
 
 // ---------- The "always show symbols" switch ----------
 
@@ -744,26 +721,12 @@ function redrawAllBottles() {
   updateScreen();
 }
 
-// ---------- The Look menu: bottles or attic boxes ----------
+// ---------- The look ----------
 
-const lookMenu = document.getElementById("look");
-lookMenu.value = currentLook;
-
-lookMenu.addEventListener("change", function () {
-  if (busyBottles.size > 0 || !looks.includes(lookMenu.value)) {
-    lookMenu.value = currentLook;   // wait until moves are finished, or an unknown look: put it back
-    return;
-  }
-  setLook(lookMenu.value);
-});
-
-// setLook(look) switches the look, remembers it, and draws everything again.
+// setLook(look) switches the look. (The bottles must be drawn again afterwards.)
 function setLook(look) {
   currentLook = look;
-  saveChoice("look", look);   // (save.js)
   document.body.classList.toggle("theme-attic", look === "attic");
-  lookMenu.value = look;
-  redrawAllBottles();
 }
 
 // ---------- Reset progress ----------
@@ -774,7 +737,7 @@ document.getElementById("reset-progress").addEventListener("click", function () 
     showMessage();
     return;
   }
-  if (!confirm("Forget everything this game saved in this browser, and start again on Easy?")) {
+  if (!confirm("Forget everything this game saved in this browser, and start again at level 1?")) {
     return;
   }
   resetProgress();                    // save.js
@@ -782,10 +745,7 @@ document.getElementById("reset-progress").addEventListener("click", function () 
   showSwitch();
   soundOn = true;
   showSoundSwitch();
-  currentLook = "liquid";
-  lookMenu.value = "liquid";
-  document.body.classList.remove("theme-attic");
-  document.getElementById("difficulty").value = difficultyName;
+  setLook(lookForLevel(levelNumber));   // level 1 again, so its look
   keyboardBottle = 0;
   drawBottles();
   updateScreen();

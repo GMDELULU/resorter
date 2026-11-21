@@ -16,13 +16,11 @@ const saveVersion = 1;
 function saveProgress() {
   const data = {
     version: saveVersion,
-    difficulty: difficultyName,
     startingBottles: startingBottles,
     bottles: bottles,
     moveHistory: moveHistory.slice(-1000),   // only the newest 1000 moves (loading accepts at most 1000)
     levelsWon: levelsWon,
-    levelNumber: levelNumber,     // the level on the path
-    highestLevel: highestLevel    // the highest level reached on the path
+    levelNumber: levelNumber      // the level on the path
   };
   try {
     localStorage.setItem(saveKey, JSON.stringify(data));
@@ -57,17 +55,23 @@ function loadProgress() {
     return;
   }
 
+  // Saves from before lesson 20 can be in free play (Easy, Medium, Hard), which is gone now.
+  // Then we keep the level number and the levels won, and start that level of the path fresh.
+  if (isOldFreePlaySave(data)) {
+    levelsWon = data.levelsWon;
+    startPathLevel(savedLevel(data.levelNumber));   // (this also saves it in the new way)
+    return;
+  }
+
   if (!isGoodSave(data)) {
     forgetProgress();
     return;
   }
 
   // Everything checked: use it.
-  difficultyName = data.difficulty;
   levelNumber = savedLevel(data.levelNumber);
-  highestLevel = Math.max(levelNumber, savedLevel(data.highestLevel));
-  colourCount = settingsFor(data.difficulty, levelNumber).colours;
-  emptyBottles = settingsFor(data.difficulty, levelNumber).empty;
+  colourCount = levelSettings(levelNumber).colours;
+  emptyBottles = levelSettings(levelNumber).empty;
   startingBottles = copyBottles(data.startingBottles);
   bottles = copyBottles(data.bottles);
   moveHistory = data.moveHistory.map(copyBottles);
@@ -84,10 +88,23 @@ function savedLevel(value) {
   return (value === undefined) ? 1 : value;
 }
 
-// settingsFor(difficulty, level) gives the colours and empty bottles for a difficulty name,
-// or for a level of the path.
-function settingsFor(difficulty, level) {
-  return (difficulty === "path") ? levelSettings(level) : difficulties[difficulty];
+// isGoodLevelNumber(value): missing (older saves) or a whole number from 1 to highestLevelNumber.
+function isGoodLevelNumber(value) {
+  return value === undefined ||
+         (Number.isInteger(value) && value >= 1 && value <= highestLevelNumber);
+}
+
+// isGoodWinCount(value): a whole number from 0 to a million.
+function isGoodWinCount(value) {
+  return Number.isInteger(value) && value >= 0 && value <= 1000000;
+}
+
+// isOldFreePlaySave(data): a save from before lesson 20, made in free play.
+// Only the level number and the levels won are used from it, so only those are checked.
+function isOldFreePlaySave(data) {
+  return typeof data === "object" && data !== null && data.version === saveVersion &&
+         typeof data.difficulty === "string" && data.difficulty !== "path" &&
+         isGoodLevelNumber(data.levelNumber) && isGoodWinCount(data.levelsWon);
 }
 
 // ---------- Checking saved data (never trust it blindly) ----------
@@ -97,21 +114,15 @@ function isGoodSave(data) {
   if (typeof data !== "object" || data === null || data.version !== saveVersion) {
     return false;
   }
-  if (typeof data.difficulty !== "string" ||
-      (data.difficulty !== "path" && !Object.hasOwn(difficulties, data.difficulty))) {
+  // (Saves from before lesson 20 also say difficulty "path"; newer saves have no difficulty.)
+  if (data.difficulty !== undefined && data.difficulty !== "path") {
     return false;
   }
-  // Level numbers: missing (older saves) or a whole number from 1 to maxLevel.
-  for (const value of [data.levelNumber, data.highestLevel]) {
-    if (value !== undefined && (!Number.isInteger(value) || value < 1 || value > maxLevel)) {
-      return false;
-    }
-  }
-  if (!Number.isInteger(data.levelsWon) || data.levelsWon < 0 || data.levelsWon > 1000000) {
+  if (!isGoodLevelNumber(data.levelNumber) || !isGoodWinCount(data.levelsWon)) {
     return false;
   }
-  const colours = settingsFor(data.difficulty, savedLevel(data.levelNumber)).colours;
-  const empty = settingsFor(data.difficulty, savedLevel(data.levelNumber)).empty;
+  const colours = levelSettings(savedLevel(data.levelNumber)).colours;
+  const empty = levelSettings(savedLevel(data.levelNumber)).empty;
   if (!isGoodLevel(data.startingBottles, colours, empty) || !isGoodLevel(data.bottles, colours, empty)) {
     return false;
   }
@@ -167,9 +178,7 @@ function isGoodLevel(level, colours, empty) {
 // resetProgress() forgets everything and starts fresh: level 1 of the path, no levels won.
 function resetProgress() {
   levelsWon = 0;
-  levelNumber = 1;
-  highestLevel = 1;
-  setDifficulty("path");   // back to level 1 of the path (this would save it)...
+  startPathLevel(1);       // back to level 1 of the path (this would save it)...
   forgetProgress();        // ...so we remove the save again afterwards: nothing is stored now
   try {
     localStorage.removeItem(settingsKey);   // and the settings, like "always show symbols"
@@ -211,33 +220,5 @@ function saveSetting(name, value) {
     localStorage.setItem(settingsKey, JSON.stringify(settings));
   } catch (problem) {
     // saving not allowed: the setting just lasts until the page closes
-  }
-}
-
-// loadChoice(name, allowed, standard) reads a setting that is one word from a fixed list,
-// like the look ("liquid" or "attic"). Anything not on the list gives back "standard".
-function loadChoice(name, allowed, standard) {
-  try {
-    const settings = JSON.parse(localStorage.getItem(settingsKey));
-    if (settings !== null && typeof settings === "object" && allowed.includes(settings[name])) {
-      return settings[name];
-    }
-  } catch (problem) {
-    // unreadable: use the standard value
-  }
-  return standard;
-}
-
-// saveChoice(name, value) saves one word-setting.
-function saveChoice(name, value) {
-  try {
-    let settings = JSON.parse(localStorage.getItem(settingsKey));
-    if (settings === null || typeof settings !== "object" || Array.isArray(settings)) {
-      settings = {};
-    }
-    settings[name] = String(value);
-    localStorage.setItem(settingsKey, JSON.stringify(settings));
-  } catch (problem) {
-    // saving not allowed
   }
 }
