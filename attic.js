@@ -138,26 +138,32 @@ function boxShape(place, layerHeight, random) {
 
 // ---------- Moving boxes: they fly over in an arc ----------
 
-// playBoxMove(info) shows a move in the attic look. "info" is lastPour from game.js.
-async function playBoxMove(info) {
-  busyBottles.add(info.from);
-  busyBottles.add(info.to);
+// playBoxMove(info, waited) shows a move in the attic look. "info" is lastPour from game.js.
+// "waited" is true if it had to wait its turn (see planAnimation in pour.js).
+async function playBoxMove(info, waited) {
   const buttons = document.querySelectorAll(".bottle-button");
   const source = buttons[info.from];
   const target = buttons[info.to];
-  const flying = addSvgPart("g", {}, pourLayer);   // the flying boxes (pour.js's layer)
+  let flying = null;
   try {
+    flying = addSvgPart("g", {}, pourLayer);   // the flying boxes (pour.js's layer)
+    if (waited) {
+      showMoment(info, source, target);   // both shelves as they were just before this move
+    }
     source.classList.remove("selected");
     // The source shelf shows its new state at once: the moving boxes have left it.
-    source.replaceChildren(makeBottle(bottles[info.from], info.from));
-    source.dataset.layers = bottles[info.from].join(",");
+    source.replaceChildren(makeBottle(info.sourceAfter, info.from));
+    source.dataset.layers = info.sourceAfter.join(",");
 
     const s = source.getBoundingClientRect();
     const t = target.getBoundingClientRect();
+    // The shelf is still gliding down from its lift: measure from where it will stand.
+    // (currentLift is in pour.js; it is the lift right now, for example -12 pixels.)
+    const sourceTop = s.top - currentLift(source);
     const size = s.height / drawHeight;
     const layerHeight = liquidHeight / capacity;
-    const moved = bottles[info.to].length - info.layersBefore;
-    const sourceCountBefore = bottles[info.from].length + moved;
+    const moved = info.targetAfter.length - info.layersBefore;
+    const sourceCountBefore = info.sourceAfter.length + moved;
 
     // One flying box for every moved layer. The top box goes first and lands lowest.
     const boxes = [];
@@ -165,7 +171,7 @@ async function playBoxMove(info) {
       const fromPlace = sourceCountBefore - 1 - k;
       const toPlace = info.layersBefore + k;
       boxes.push({
-        fromY: s.top + (drawMargin + bottleBottom - (fromPlace + 1) * layerHeight) * size,
+        fromY: sourceTop + (drawMargin + bottleBottom - (fromPlace + 1) * layerHeight) * size,
         toY: t.top + (drawMargin + bottleBottom - (toPlace + 1) * layerHeight) * size,
         fromX: s.left + (drawMargin + 8) * size,
         toX: t.left + (drawMargin + 8) * size,
@@ -241,9 +247,10 @@ async function playBoxMove(info) {
   } catch (problem) {
     console.error(problem);
   } finally {
-    flying.remove();
-    busyBottles.delete(info.from);
-    busyBottles.delete(info.to);
+    if (flying !== null) {
+      flying.remove();
+    }
+    animationFinished(info);   // (pour.js)
     updateScreen();
     announcePour(info);
     if (info.closes && !wantsLessMotion()) {

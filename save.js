@@ -19,7 +19,7 @@ function saveProgress() {
     difficulty: difficultyName,
     startingBottles: startingBottles,
     bottles: bottles,
-    moveHistory: moveHistory,
+    moveHistory: moveHistory.slice(-1000),   // only the newest 1000 moves (loading accepts at most 1000)
     levelsWon: levelsWon,
     levelNumber: levelNumber,     // the level on the path
     highestLevel: highestLevel    // the highest level reached on the path

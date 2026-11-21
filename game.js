@@ -1,6 +1,6 @@
 // ReSorter: the game in data.
 // This file only knows numbers: "colour 1", "colour 2"...
-// How a colour looks is decided in style.css (the look), not here.
+// How a colour looks is decided in the theme files (theme-*.css), not here.
 // Putting the bottles on the screen happens in draw.js.
 
 // How many layers fit in one bottle.
@@ -262,7 +262,11 @@ function tapBottle(number) {
         to: number,
         colour: colour,
         layersBefore: amountBefore,   // how many layers the target had before the pour
-        closes: isClosed(bottles[number])   // true if this pour sorted the target (stopper!)
+        closes: isClosed(bottles[number]),   // true if this pour sorted the target (stopper!)
+        // A copy of both bottles right after this pour. The animation may have to wait its turn,
+        // and by then the player may have made more moves; the copies keep this moment.
+        sourceAfter: bottles[selectedBottle].slice(),
+        targetAfter: bottles[number].slice()
       };
       if (checkWin()) {
         won = true;
@@ -275,7 +279,7 @@ function tapBottle(number) {
       saveProgress();   // remember this in the browser (save.js)
     } else {
       message = reason;
-      wrongBottle = number;   // the bottle you tried to pour into shakes
+      wrongBottle = number;   // the bottle you tried to pour into ripples
     }
     selectedBottle = null;   // after a pour, or a wrong move, the bottle goes back down
   }

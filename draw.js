@@ -2,7 +2,7 @@
 // This file reads the data from game.js (bottles and capacity)
 // and DRAWS every bottle as a small SVG picture made of pencil strokes.
 // It only gives the parts class names like "colour-2" or "outline";
-// style.css decides the colours.
+// the theme files (theme-*.css) decide the colours.
 // Note: index.html must load game.js BEFORE this file, or "bottles" and "capacity" don't exist yet.
 
 // ---------- Settings for the drawing (you may change these) ----------
@@ -119,7 +119,7 @@ function pencilLine(points, wobble, random, closed) {
   return instructions;
 }
 
-// themeColour(name) reads a colour from the theme file (theme-liquid.css), for example
+// themeColour(name) reads a colour from the theme files (theme-*.css), for example
 // themeColour("--gold"). We need it where JavaScript sets a colour itself.
 function themeColour(name) {
   return getComputedStyle(document.body).getPropertyValue(name).trim();   // (body: so it follows the restored world too)
@@ -380,9 +380,6 @@ function drawBottles() {
     // An event listener: "when this button is clicked, do these steps".
     // "click" works the same for a mouse click, a finger tap and the Enter or Space key.
     button.addEventListener("click", function () {
-      if (busyBottles.has(number)) {
-        return;                  // this bottle is busy in a pour animation: wait until it is finished
-      }
       tapBottle(number);         // the rule: what a tap means (in game.js)
       if (selectedBottle === number) {
         soundPickUp();           // (sound.js)
@@ -390,9 +387,9 @@ function drawBottles() {
       moveKeyboardTo(number, false);   // the keyboard continues from the tapped bottle
       if (lastPour !== null && !wantsLessMotion()) {
         if (currentLook === "attic") {
-          playBoxMove(lastPour);   // the boxes fly over (attic.js)
+          planAnimation(lastPour, playBoxMove);   // the boxes fly over (attic.js), now or when it is their turn
         } else {
-          playPour(lastPour);      // show the pour as an animation (in pour.js); other bottles stay free
+          planAnimation(lastPour, playPour);      // the pour animation (pour.js), now or when it is its turn
         }
         showSelection();
         if (!won) {
@@ -484,10 +481,12 @@ function updateScreen() {
   }
   showMessage();
 
-  if (wrongBottle !== null && !busyBottles.has(wrongBottle)) {
+  if (wrongBottle !== null) {
     soundWrong();   // (sound.js)
-    ripple(buttons[wrongBottle]);
-    wrongBottle = null;   // rippled once: done (so a later redraw does not ripple it again)
+    if (!busyBottles.has(wrongBottle)) {
+      ripple(buttons[wrongBottle]);   // (a bottle in an animation does not ripple; the message is enough)
+    }
+    wrongBottle = null;   // done (so a later redraw does not ripple it again)
   }
 
   // Won: after a few seconds a new level starts by itself.
@@ -651,7 +650,9 @@ function showSelection() {
 
 document.getElementById("undo-button").addEventListener("click", function () {
   if (busyBottles.size > 0) {
-    return;   // wait until all pour animations are finished
+    message = "Wait until the pour is finished.";   // wait until all pour animations are finished
+    showMessage();
+    return;
   }
   undo();
   updateScreen();
@@ -659,6 +660,8 @@ document.getElementById("undo-button").addEventListener("click", function () {
 
 document.getElementById("restart-button").addEventListener("click", function () {
   if (busyBottles.size > 0) {
+    message = "Wait until the pour is finished.";
+    showMessage();
     return;
   }
   restartLevel();   // (takes back a win first, so it is not counted twice)

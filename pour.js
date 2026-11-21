@@ -5,7 +5,7 @@
 //   2. it pours: a stream flows down, the lifted bottle drains and the target fills, bit by bit;
 //   3. it swings back to its own place in an arc, tipping upright again.
 // Every move speeds up and slows down gently (slow-fast-slow), like Ja's naturalMovement.html.
-// Several pours can play at the same time, as long as they use different bottles.
+// Several pours can play at the same time. Pours that share a bottle take turns (see planAnimation).
 // Note: index.html must load this file AFTER game.js and draw.js.
 
 // ---------- Settings (you may change these) ----------
@@ -29,9 +29,67 @@ const arcHeight = 50;
 
 // ---------- State ----------
 
-// The bottles that are busy in a pour animation right now (by number).
-// Taps on these bottles wait; all other bottles can be used at once.
+// The bottles that are busy in an animation right now, or waiting for one (by number).
+// The screen leaves them alone: the animation draws them.
+// The player can still tap them: the move counts at once, and its animation waits its turn.
 const busyBottles = new Set();
+
+// The queue: like cars at a traffic light, the animations for one bottle play one after another.
+// animationsLeft: for each busy bottle, how many animations it still has to play.
+// lastAnimation: for each busy bottle, the last animation planned for it (a promise,
+// a "ticket" that is kept when that animation has finished).
+const animationsLeft = new Map();
+const lastAnimation = new Map();
+
+// planAnimation(info, play) plans the animation of one move ("play" is playPour or playBoxMove).
+// Are both bottles free? Then it starts at once. Otherwise it waits until their earlier
+// animations have finished.
+function planAnimation(info, play) {
+  const earlier = [lastAnimation.get(info.from), lastAnimation.get(info.to)]
+    .filter(function (ticket) { return ticket !== undefined; });
+  for (const number of [info.from, info.to]) {
+    busyBottles.add(number);
+    animationsLeft.set(number, (animationsLeft.get(number) || 0) + 1);
+  }
+  let ticket;
+  if (earlier.length === 0) {
+    ticket = play(info, false);   // free: start now
+  } else {
+    // allSettled: wait until the earlier ones are over, also if one of them went wrong,
+    // so a problem in one animation never leaves the bottles waiting forever.
+    ticket = Promise.allSettled(earlier).then(function () {
+      return play(info, true);    // its turn: start now ("true": it had to wait)
+    });
+  }
+  lastAnimation.set(info.from, ticket);
+  lastAnimation.set(info.to, ticket);
+}
+
+// animationFinished(info): one animation is done. A bottle with nothing left to play is free again.
+function animationFinished(info) {
+  for (const number of [info.from, info.to]) {
+    const left = animationsLeft.get(number) - 1;
+    if (left > 0) {
+      animationsLeft.set(number, left);
+    } else {
+      animationsLeft.delete(number);
+      lastAnimation.delete(number);
+      busyBottles.delete(number);
+    }
+  }
+}
+
+// showMoment(info, source, target) draws both bottles as they were just before this move.
+// Needed when the animation had to wait: by now the player may have made more moves.
+function showMoment(info, source, target) {
+  const moved = info.targetAfter.length - info.layersBefore;
+  const sourceBefore = info.sourceAfter.concat(new Array(moved).fill(info.colour));
+  const targetBefore = info.targetAfter.slice(0, info.layersBefore);
+  source.replaceChildren(makeBottle(sourceBefore, info.from));
+  source.dataset.layers = sourceBefore.join(",");   // so updateScreen later draws the newest state
+  target.replaceChildren(makeBottle(targetBefore, info.to));
+  target.dataset.layers = targetBefore.join(",");
+}
 
 // A see-through layer over the whole page, where the streams of colour are drawn.
 // pointer-events: none (in style.css) means taps go straight through it.
@@ -56,16 +114,18 @@ function between(a, b, share) {
 
 // ---------- The animation ----------
 
-// playPour(info) shows one pour. "info" is lastPour from game.js:
-// { from, to, colour, layersBefore, closes }.
+// playPour(info, waited) shows one pour. "info" is lastPour from game.js:
+// { from, to, colour, layersBefore, closes, sourceAfter, targetAfter }.
+// "waited" is true if it had to wait its turn (see planAnimation).
 // "async" means this function can pause (await) in the middle without freezing the page.
-async function playPour(info) {
-  busyBottles.add(info.from);
-  busyBottles.add(info.to);
+async function playPour(info, waited) {
   const buttons = document.querySelectorAll(".bottle-button");
   const source = buttons[info.from];
   const target = buttons[info.to];
   try {
+    if (waited) {
+      showMoment(info, source, target);
+    }
     await showPour(info, source, target);
   } catch (problem) {
     console.error(problem);   // if anything goes wrong, we still tidy up below
@@ -76,9 +136,8 @@ async function playPour(info) {
     source.style.zIndex = "";
     source.style.transition = "";
     source.classList.remove("flying");
-    busyBottles.delete(info.from);
-    busyBottles.delete(info.to);
-    updateScreen();   // draw these two bottles normally again, with their new layers
+    animationFinished(info);
+    updateScreen();   // draw the bottles that are free again, with their newest layers
     announcePour(info);   // for screen readers (draw.js)
     if (info.closes && !wantsLessMotion()) {
       dropStopper(target);   // the pour sorted the target: stopper and firework (sparkle.js)
@@ -128,9 +187,9 @@ async function showPour(info, source, target) {
   // 2. The liquid. While the bottle moves, we draw the liquid ourselves, many times per second:
   //    it stays level like real water, slides towards the mouth when the bottle tips,
   //    drains out of the lifted bottle bit by bit, and fills the other bottle bit by bit.
-  const moved = bottles[info.to].length - info.layersBefore;   // how many layers are poured
-  const sourceColours = bottles[info.from].concat(new Array(moved).fill(info.colour));
-  const targetColours = bottles[info.to].slice();             // its layers after the pour
+  const moved = info.targetAfter.length - info.layersBefore;   // how many layers are poured
+  const sourceColours = info.sourceAfter.concat(new Array(moved).fill(info.colour));
+  const targetColours = info.targetAfter.slice();             // its layers after the pour
   const sourceLiquid = startLiveLiquid(source);
   const targetLiquid = startLiveLiquid(target);
   const layerHeight = liquidHeight / capacity;
@@ -198,7 +257,8 @@ async function showPour(info, source, target) {
 
         // The stream: it grows down from the mouth at the start, and its tail falls in at the end.
         if (progress > 0 && progress < 1) {
-          const surfaceY = t.top + (bottleBottom - (info.layersBefore + poured) * layerHeight + drawMargin) * size;
+          // (Measured again every picture: the target may be picked up in the meantime.)
+          const surfaceY = target.getBoundingClientRect().top + (bottleBottom - (info.layersBefore + poured) * layerHeight + drawMargin) * size;
           const fullLength = Math.max(0, surfaceY - mouthY);
           const head = fullLength * Math.min(1, progress / 0.15);
           const tail = fullLength * Math.max(0, (progress - 0.9) / 0.1);
