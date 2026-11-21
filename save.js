@@ -59,7 +59,9 @@ function loadProgress() {
   // Then we keep the level number and the levels won, and start that level of the path fresh.
   if (isOldFreePlaySave(data)) {
     levelsWon = data.levelsWon;
-    startPathLevel(savedLevel(data.levelNumber));   // (this also saves it in the new way)
+    // Old free play after winning all 100 levels still says level 100: go on to 101.
+    const level = savedLevel(data.levelNumber);
+    startPathLevel(level === maxLevel ? maxLevel + 1 : level);   // (this also saves it in the new way)
     return;
   }
 

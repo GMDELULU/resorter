@@ -21,6 +21,12 @@
   src: url("fonts/JosefinSans-Variable.ttf");
 }
 
+/* Never sideways scrolling: a bottle that swings over to pour may poke out past the edge
+   of the screen for a moment. "clip" cuts that off instead of making the page wider. */
+html {
+  overflow-x: clip;
+}
+
 /* The whole page */
 body {
   background-color: var(--background);   /* chaos background: almost black */

@@ -448,5 +448,5 @@ function startPathLevel(n) {
 // nextLevel() is what happens after a win: the next level number.
 // (After level 100 levelSettings stays the same, so the levels stay as hard.)
 function nextLevel() {
-  startPathLevel(levelNumber + 1);
+  startPathLevel(Math.min(levelNumber + 1, highestLevelNumber));   // (a safety limit, see save.js)
 }

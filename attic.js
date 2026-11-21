@@ -140,10 +140,13 @@ function boxShape(place, layerHeight, random) {
 
 // playBoxMove(info, waited) shows a move in the attic look. "info" is lastPour from game.js.
 // "waited" is true if it had to wait its turn (see planAnimation in pour.js).
-async function playBoxMove(info, waited) {
+// "joinSide" is set when it flies in at the same moment as another move into the same shelf.
+async function playBoxMove(info, waited, joinSide) {
   const buttons = document.querySelectorAll(".bottle-button");
   const source = buttons[info.from];
   const target = buttons[info.to];
+  const side = (joinSide !== undefined && joinSide !== null) ? joinSide : "left";
+  startPouringInto(info.to, side);   // (pour.js)
   let flying = null;
   try {
     flying = addSvgPart("g", {}, pourLayer);   // the flying boxes (pour.js's layer)
@@ -250,7 +253,13 @@ async function playBoxMove(info, waited) {
     if (flying !== null) {
       flying.remove();
     }
+    stopPouringInto(info.to, side);
     animationFinished(info);   // (pour.js)
+    if (busyBottles.has(info.to)) {
+      // Another move still flies into this shelf: show the boxes that have landed so far.
+      target.replaceChildren(makeBottle(info.targetAfter, info.to));
+      target.dataset.layers = info.targetAfter.join(",");
+    }
     updateScreen();
     announcePour(info);
     if (info.closes && !wantsLessMotion()) {

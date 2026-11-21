@@ -27,6 +27,11 @@ const pourSteps = {
 // How high the arc goes above a straight line, in pixels on a laptop.
 const arcHeight = 50;
 
+// Two bottles may pour into the same bottle at the same moment, one from each side.
+// How far (in pixels on a laptop) the mouth of the second one hangs away from the middle,
+// so the two streams do not fall exactly on top of each other.
+const sharedPourGap = 8;
+
 // ---------- State ----------
 
 // The bottles that are busy in an animation right now, or waiting for one (by number).
@@ -41,15 +46,28 @@ const busyBottles = new Set();
 const animationsLeft = new Map();
 const lastAnimation = new Map();
 
+// The pours that are playing into a bottle right now: bottle number -> the sides in use
+// ("left" or "right": the side the pouring bottle hangs on).
+const pouringInto = new Map();
+
 // planAnimation(info, play) plans the animation of one move ("play" is playPour or playBoxMove).
-// Are both bottles free? Then it starts at once. Otherwise it waits until their earlier
-// animations have finished.
+// Are both bottles free? Then it starts at once. Is the target only being filled by one other
+// pour, with room on its other side? Then it joins in, from that side, at the same moment.
+// Otherwise it waits until the earlier animations of its bottles have finished.
 function planAnimation(info, play) {
+  const joinSide = canJoin(info) ? otherSide(pouringInto.get(info.to)[0]) : null;
   const earlier = [lastAnimation.get(info.from), lastAnimation.get(info.to)]
     .filter(function (ticket) { return ticket !== undefined; });
   for (const number of [info.from, info.to]) {
     busyBottles.add(number);
     animationsLeft.set(number, (animationsLeft.get(number) || 0) + 1);
+  }
+  if (joinSide !== null) {
+    const ticket = play(info, false, joinSide);   // pour along with the other one, now
+    lastAnimation.set(info.from, ticket);
+    // The target is free only when BOTH pours into it are done.
+    lastAnimation.set(info.to, Promise.allSettled([lastAnimation.get(info.to), ticket]));
+    return;
   }
   let ticket;
   if (earlier.length === 0) {
@@ -63,6 +81,83 @@ function planAnimation(info, play) {
   }
   lastAnimation.set(info.from, ticket);
   lastAnimation.set(info.to, ticket);
+}
+
+// canJoin(info): may this move pour into its target at the same moment as another pour?
+// Only if: the source has nothing to play; exactly one pour is filling the target and nothing
+// else waits for it; and there is room on the other side (the attic boxes need no room).
+function canJoin(info) {
+  const sides = pouringInto.get(info.to);
+  return !lastAnimation.has(info.from) &&
+         sides !== undefined && sides.length === 1 &&
+         animationsLeft.get(info.to) === 1 &&
+         (currentLook === "attic" || roomOnSide(info.to, otherSide(sides[0])));
+}
+
+// otherSide(side): "left" gives "right", "right" gives "left".
+function otherSide(side) {
+  return (side === "left") ? "right" : "left";
+}
+
+// roomOnSide(number, side): is there room on that side of bottle "number" for a tipped bottle?
+// A tipped bottle lies almost flat, so it needs about its own height.
+function roomOnSide(number, side) {
+  const t = document.querySelectorAll(".bottle-button")[number].getBoundingClientRect();
+  const middle = t.left + t.width / 2;
+  const room = (side === "left") ? middle : window.innerWidth - middle;
+  return room >= t.height * 0.9;
+}
+
+// sideWithMostRoom(target): the side of the target with the most room on the screen.
+function sideWithMostRoom(target) {
+  const t = target.getBoundingClientRect();
+  const middle = t.left + t.width / 2;
+  return (middle >= window.innerWidth - middle) ? "left" : "right";
+}
+
+// startPouringInto(number, side) and stopPouringInto(number, side) keep pouringInto up to date.
+function startPouringInto(number, side) {
+  const sides = pouringInto.get(number) || [];
+  sides.push(side);
+  pouringInto.set(number, sides);
+}
+function stopPouringInto(number, side) {
+  const sides = (pouringInto.get(number) || []).filter(function (s) { return s !== side; });
+  if (sides.length > 0) {
+    pouringInto.set(number, sides);
+  } else {
+    pouringInto.delete(number);
+  }
+}
+
+// ---------- The shared fill ----------
+// When two bottles pour into one, both animations add to ONE fill level of the target,
+// so they never fight over its picture. fills: bottle number -> { liquid, colours, amount, users }.
+const fills = new Map();
+
+// joinFill(info, target) gives the shared fill of the target (and makes it for the first pour).
+function joinFill(info, target) {
+  let fill = fills.get(info.to);
+  if (fill === undefined) {
+    fill = { liquid: startLiveLiquid(target), colours: info.targetAfter.slice(),
+             amount: info.layersBefore, users: 0 };
+    fills.set(info.to, fill);
+  } else {
+    fill.colours = info.targetAfter.slice();   // the newest pour knows the most layers
+  }
+  fill.users = fill.users + 1;
+  return fill;
+}
+
+// leaveFill(number): one pour is done with the fill. The last one removes it.
+function leaveFill(number) {
+  const fill = fills.get(number);
+  if (fill !== undefined) {
+    fill.users = fill.users - 1;
+    if (fill.users <= 0) {
+      fills.delete(number);
+    }
+  }
 }
 
 // animationFinished(info): one animation is done. A bottle with nothing left to play is free again.
@@ -114,19 +209,23 @@ function between(a, b, share) {
 
 // ---------- The animation ----------
 
-// playPour(info, waited) shows one pour. "info" is lastPour from game.js:
+// playPour(info, waited, joinSide) shows one pour. "info" is lastPour from game.js:
 // { from, to, colour, layersBefore, closes, sourceAfter, targetAfter }.
 // "waited" is true if it had to wait its turn (see planAnimation).
+// "joinSide" is the side to pour from when it joins another pour into the same bottle.
 // "async" means this function can pause (await) in the middle without freezing the page.
-async function playPour(info, waited) {
+async function playPour(info, waited, joinSide) {
   const buttons = document.querySelectorAll(".bottle-button");
   const source = buttons[info.from];
   const target = buttons[info.to];
+  const joined = (joinSide !== undefined && joinSide !== null);
+  const side = joined ? joinSide : sideWithMostRoom(target);
+  startPouringInto(info.to, side);
   try {
     if (waited) {
       showMoment(info, source, target);
     }
-    await showPour(info, source, target);
+    await showPour(info, source, target, side, joined);
   } catch (problem) {
     console.error(problem);   // if anything goes wrong, we still tidy up below
   } finally {
@@ -136,6 +235,8 @@ async function playPour(info, waited) {
     source.style.zIndex = "";
     source.style.transition = "";
     source.classList.remove("flying");
+    stopPouringInto(info.to, side);
+    leaveFill(info.to);
     animationFinished(info);
     updateScreen();   // draw the bottles that are free again, with their newest layers
     announcePour(info);   // for screen readers (draw.js)
@@ -145,8 +246,9 @@ async function playPour(info, waited) {
   }
 }
 
-// showPour(info, source, target) does the real work of the animation.
-async function showPour(info, source, target) {
+// showPour(info, source, target, side, joined) does the real work of the animation.
+// "side": the side of the target the bottle hangs on. "joined": it pours along with another one.
+async function showPour(info, source, target, side, joined) {
   // 1. Where is everything? Measure the bottles on the screen, in pixels.
   //    The source is lifted (picked up) right now; remember how high, then hold it there.
   const liftNow = currentLift(source);
@@ -164,14 +266,16 @@ async function showPour(info, source, target) {
   const sourceMiddleY = homeTop + s.height / 2;
   const mouthDistance = (drawHeight / 2 - drawMargin) * size;
 
-  // Tip towards the side with the most room on the screen.
+  // Tip from the chosen side (normally the side with the most room on the screen).
   const targetMiddleX = t.left + t.width / 2;
-  const fromLeft = targetMiddleX >= window.innerWidth - targetMiddleX;
+  const fromLeft = (side === "left");
   const tipAngle = fromLeft ? 100 : -100;          // degrees; + = clockwise
   const radians = tipAngle * Math.PI / 180;
 
   // Where the mouth must end up: just above the target's mouth.
-  const mouthX = targetMiddleX;
+  // (A second bottle pouring along hangs a little to its own side.)
+  const gap = joined ? sharedPourGap * size * (fromLeft ? -1 : 1) : 0;
+  const mouthX = targetMiddleX + gap;
   const mouthY = t.top - 24 * size;
 
   // How far the middle of the bottle must move, so that when tipped the mouth is there.
@@ -189,9 +293,9 @@ async function showPour(info, source, target) {
   //    drains out of the lifted bottle bit by bit, and fills the other bottle bit by bit.
   const moved = info.targetAfter.length - info.layersBefore;   // how many layers are poured
   const sourceColours = info.sourceAfter.concat(new Array(moved).fill(info.colour));
-  const targetColours = info.targetAfter.slice();             // its layers after the pour
   const sourceLiquid = startLiveLiquid(source);
-  const targetLiquid = startLiveLiquid(target);
+  const fill = joinFill(info, target);   // the target's fill level, shared with a second pour
+  let pouredSoFar = 0;
   const layerHeight = liquidHeight / capacity;
 
   // The stream: a thin bar of colour from the mouth down to the liquid in the target.
@@ -247,18 +351,20 @@ async function showPour(info, source, target) {
         source.style.transform = "translate(" + x + "px, " + y + "px) rotate(" + angle + "deg)";
 
         const poured = moved * progress;   // how many layers have flowed out so far (can be 1.5)
+        fill.amount = fill.amount + (poured - pouredSoFar);   // add what flowed in since the last picture
+        pouredSoFar = poured;
         const wavePhase = time / 1000 * waveSpeed;
         // The waves: in the lifted bottle while it moves and pours; in the other bottle while it fills.
         const sourceWaves = waveSize(time, 0, total);
         const targetWaves = waveSize(time, swingOver, swingOver + pourTime + 400);
         drawLiveLiquid(sourceLiquid, sourceColours, sourceColours.length - poured,
                        angle * Math.PI / 180, sourceWaves, wavePhase);
-        drawLiveLiquid(targetLiquid, targetColours, info.layersBefore + poured, 0, targetWaves, wavePhase);
+        drawLiveLiquid(fill.liquid, fill.colours, fill.amount, 0, targetWaves, wavePhase);
 
         // The stream: it grows down from the mouth at the start, and its tail falls in at the end.
         if (progress > 0 && progress < 1) {
           // (Measured again every picture: the target may be picked up in the meantime.)
-          const surfaceY = target.getBoundingClientRect().top + (bottleBottom - (info.layersBefore + poured) * layerHeight + drawMargin) * size;
+          const surfaceY = target.getBoundingClientRect().top + (bottleBottom - fill.amount * layerHeight + drawMargin) * size;
           const fullLength = Math.max(0, surfaceY - mouthY);
           const head = fullLength * Math.min(1, progress / 0.15);
           const tail = fullLength * Math.max(0, (progress - 0.9) / 0.1);
