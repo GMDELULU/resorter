@@ -46,10 +46,10 @@ function lookForLevel(n) {
 let currentLook = lookForLevel(levelNumber);
 document.body.classList.toggle("theme-attic", currentLook === "attic");
 
-// Show the symbols? Always from 6 colours on (style guide), or always if the player switched them on.
+// Show the symbols? Only when the player switched them on (Symbols in the menu; Ja's choice, lesson 21a).
 let alwaysSymbols = loadSetting("alwaysSymbols", false);   // (save.js)
 function showSymbols() {
-  return alwaysSymbols || colourCount >= 6;
+  return alwaysSymbols;
 }
 
 // ---------- The bottle shape (do not change, unless you redraw the bottle) ----------
@@ -820,7 +820,7 @@ document.addEventListener("click", function (event) {
 
 document.getElementById("reset-progress").addEventListener("click", function () {
   if (busyBottles.size > 0) {
-    message = "Wait until the pour is finished.";
+    message = "Wait until the move is finished.";
     showMessage();
     return;
   }

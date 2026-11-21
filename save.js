@@ -5,10 +5,11 @@
 // Note: index.html must load this file right AFTER game.js (and before draw.js).
 
 // The name under which the game is saved, and a version number for the way it is saved.
-// (If we ever change what we save, we raise the version, and old saves are simply ignored.)
+// (If we ever change what we save, we raise the version. Version 1 saves are converted: see isOldSave.)
 // (A clear, distinctive name, so it never mixes with other pages that use localStorage.)
 const saveKey = "resorter-progress";
-const saveVersion = 1;
+// Version 2 (lesson 21a): the new difficulty curve, and the highest level reached.
+const saveVersion = 2;
 
 // ---------- Saving ----------
 
@@ -20,7 +21,8 @@ function saveProgress() {
     bottles: bottles,
     moveHistory: moveHistory.slice(-1000),   // only the newest 1000 moves (loading accepts at most 1000)
     levelsWon: levelsWon,
-    levelNumber: levelNumber      // the level on the path
+    levelNumber: levelNumber,     // the level on the path
+    highestLevel: highestLevel    // the highest level reached (for the level grid)
   };
   try {
     localStorage.setItem(saveKey, JSON.stringify(data));
@@ -55,13 +57,17 @@ function loadProgress() {
     return;
   }
 
-  // Saves from before lesson 20 can be in free play (Easy, Medium, Hard), which is gone now.
-  // Then we keep the level number and the levels won, and start that level of the path fresh.
-  if (isOldFreePlaySave(data)) {
+  // Saves from before lesson 21a (version 1) were made with the old, easier levels.
+  // Then we keep the level number and the levels won, and start that level fresh (new curve).
+  // (Some of them are still in free play (Easy, Medium, Hard), from before lesson 20.)
+  if (isOldSave(data)) {
     levelsWon = data.levelsWon;
-    // Old free play after winning all 100 levels still says level 100: go on to 101.
-    const level = savedLevel(data.levelNumber);
-    startPathLevel(level === maxLevel ? maxLevel + 1 : level);   // (this also saves it in the new way)
+    let level = savedLevel(data.levelNumber);
+    if (typeof data.difficulty === "string" && data.difficulty !== "path" && level === maxLevel) {
+      level = maxLevel + 1;   // old free play after winning all 100 levels: go on to 101
+    }
+    highestLevel = level;
+    startPathLevel(level);    // (this also saves it in the new way)
     return;
   }
 
@@ -72,6 +78,7 @@ function loadProgress() {
 
   // Everything checked: use it.
   levelNumber = savedLevel(data.levelNumber);
+  highestLevel = data.highestLevel;
   colourCount = levelSettings(levelNumber).colours;
   emptyBottles = levelSettings(levelNumber).empty;
   startingBottles = copyBottles(data.startingBottles);
@@ -101,11 +108,10 @@ function isGoodWinCount(value) {
   return Number.isInteger(value) && value >= 0 && value <= 1000000;
 }
 
-// isOldFreePlaySave(data): a save from before lesson 20, made in free play.
+// isOldSave(data): a save from before lesson 21a (version 1).
 // Only the level number and the levels won are used from it, so only those are checked.
-function isOldFreePlaySave(data) {
-  return typeof data === "object" && data !== null && data.version === saveVersion &&
-         typeof data.difficulty === "string" && data.difficulty !== "path" &&
+function isOldSave(data) {
+  return typeof data === "object" && data !== null && data.version === 1 &&
          isGoodLevelNumber(data.levelNumber) && isGoodWinCount(data.levelsWon);
 }
 
@@ -116,11 +122,12 @@ function isGoodSave(data) {
   if (typeof data !== "object" || data === null || data.version !== saveVersion) {
     return false;
   }
-  // (Saves from before lesson 20 also say difficulty "path"; newer saves have no difficulty.)
-  if (data.difficulty !== undefined && data.difficulty !== "path") {
+  if (!isGoodLevelNumber(data.levelNumber) || !isGoodWinCount(data.levelsWon)) {
     return false;
   }
-  if (!isGoodLevelNumber(data.levelNumber) || !isGoodWinCount(data.levelsWon)) {
+  // The highest level reached: a real level number, and never lower than the current level.
+  if (data.highestLevel === undefined || !isGoodLevelNumber(data.highestLevel) ||
+      data.highestLevel < savedLevel(data.levelNumber)) {
     return false;
   }
   const colours = levelSettings(savedLevel(data.levelNumber)).colours;
@@ -180,6 +187,7 @@ function isGoodLevel(level, colours, empty) {
 // resetProgress() forgets everything and starts fresh: level 1 of the path, no levels won.
 function resetProgress() {
   levelsWon = 0;
+  highestLevel = 1;
   startPathLevel(1);       // back to level 1 of the path (this would save it)...
   forgetProgress();        // ...so we remove the save again afterwards: nothing is stored now
   try {

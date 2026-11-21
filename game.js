@@ -8,36 +8,32 @@ const capacity = 4;
 
 // ---------- The level path: the same levels for everyone (lesson 17b) ----------
 
-// The path has 100 levels that slowly get harder. After level 100 the levels stay
-// as hard as level 100, and the level number keeps counting: 101, 102...
+// The path has 100 levels. They get harder every 3 levels (see levelSettings); from level 34
+// on they stay at the hardest setting. After level 100 the level number keeps counting: 101, 102...
 const maxLevel = 100;
 
 // The highest level number a save may hold (a safety limit for checking saved data).
 const highestLevelNumber = 1000000;
 
-// The level the player is on (it is saved).
+// The level the player is on, and the highest level reached so far (both are saved).
+// Every level up to highestLevel can be chosen in the level grid (lesson 21b).
 let levelNumber = 1;
+let highestLevel = 1;
 
 // levelSettings(n) is the difficulty curve: how many colours and empty bottles level n has.
-// It starts gently and slowly grows. (Always 2 empty bottles, so a phone needs at most 2 rows.)
+// The levels come in blocks of 3 (1-3, 4-6, 7-9...), and every block is clearly harder:
+//   levels 1-21 (the first 7 blocks): 4, 5, 6, 7, 8, 9, 10 colours, with 2 empty bottles;
+//   levels 22-36 (the next 5 blocks): only 1 empty bottle (much less room), 6, 7, 8, 9, 10 colours;
+//   (measured in lesson 21a: every level from 1 to 150 is made in under 0.6 seconds on a laptop)
+//   level 34 and up: 10 colours and 1 empty bottle (the hardest).
 // (If you ever change this curve, also raise saveVersion in save.js: saved path games
 // were made with the old curve.)
 function levelSettings(n) {
-  let colours;
-  if (n <= 5) {
-    colours = 3;          // levels 1-5: learn the game
-  } else if (n <= 20) {
-    colours = 4;          // 6-20
-  } else if (n <= 40) {
-    colours = 5;          // 21-40
-  } else if (n <= 60) {
-    colours = 6;          // 41-60
-  } else if (n <= 90) {
-    colours = 7;          // 61-90
-  } else {
-    colours = 8;          // 91 and up
+  const block = Math.floor((n - 1) / 3);   // level 1-3 = block 0, 4-6 = block 1, ...
+  if (block <= 6) {
+    return { colours: 4 + block, empty: 2 };                  // 4 to 10 colours, 2 empty
   }
-  return { colours: colours, empty: 2 };
+  return { colours: Math.min(10, 6 + (block - 7)), empty: 1 };  // 6 to 10 colours, 1 empty
 }
 
 // levelRandom(n) gives the dice for level n. It always starts from the same seed for the
@@ -184,11 +180,11 @@ function whyNotPour(from, to, list = bottles) {
   const target = list[to];
 
   if (isClosed(target)) {
-    return "That bottle is sorted and closed.";
+    return "This one is sorted and closed.";
   } else if (target.length === capacity) {
-    return "That bottle is full.";
+    return "This one is full.";
   } else if (target.length > 0 && topColour(target) !== topColour(source)) {
-    return "You can only pour onto the same colour.";
+    return "To restore order, use only the same colours.";
   } else {
     return "";   // empty target, or same colour with room: allowed
   }
@@ -229,10 +225,10 @@ function tapBottle(number) {
   if (selectedBottle === null) {
     // Nothing picked up yet: pick up this bottle, unless it is empty or closed.
     if (bottles[number].length === 0) {
-      message = "That bottle is empty. Pick a bottle with colour in it.";
+      message = "This one is empty. Pick one with colour in it.";
       wrongBottle = number;
     } else if (isClosed(bottles[number])) {
-      message = "That bottle is sorted and closed.";
+      message = "This one is sorted and closed.";
       wrongBottle = number;
     } else {
       selectedBottle = number;
@@ -263,6 +259,9 @@ function tapBottle(number) {
       if (checkWin()) {
         won = true;
         levelsWon = levelsWon + 1;
+        // The next level is now reached: it opens in the level grid. (It stays open, also after
+        // Undo or Restart: you did solve it once.)
+        highestLevel = Math.max(highestLevel, Math.min(levelNumber + 1, highestLevelNumber));
         message = winMessage + " " + nextLevelText();
       }
       saveProgress();   // remember this in the browser (save.js)
@@ -439,6 +438,7 @@ function newLevel() {
 // startPathLevel(n) starts level n of the path: always the same level for the same number.
 function startPathLevel(n) {
   levelNumber = n;
+  highestLevel = Math.max(highestLevel, n);
   colourCount = levelSettings(n).colours;
   emptyBottles = levelSettings(n).empty;
   startingBottles = makeRandomLevel(levelRandom(n));
