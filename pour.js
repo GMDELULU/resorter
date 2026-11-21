@@ -148,6 +148,7 @@ async function showPour(info, source, target) {
   const pourTime = pourSteps.pour * pourSpeed;
   const swingBack = pourSteps.swingBack * pourSpeed;
   const total = swingOver + pourTime + swingBack;
+  soundPour(pourTime / 1000, swingOver / 1000);   // the glug starts when the liquid flows (sound.js)
   const arc = arcHeight * size;
 
   try {

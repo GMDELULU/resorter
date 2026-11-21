@@ -384,6 +384,9 @@ function drawBottles() {
         return;                  // this bottle is busy in a pour animation: wait until it is finished
       }
       tapBottle(number);         // the rule: what a tap means (in game.js)
+      if (selectedBottle === number) {
+        soundPickUp();           // (sound.js)
+      }
       moveKeyboardTo(number, false);   // the keyboard continues from the tapped bottle
       if (lastPour !== null && !wantsLessMotion()) {
         if (currentLook === "attic") {
@@ -399,8 +402,10 @@ function drawBottles() {
         updateScreen();          // the look: show what changed, at once
         if (lastPour !== null) {
           announcePour(lastPour);  // for screen readers
+          soundPour(0.3, 0);       // a short pour sound (sound.js)
         }
         if (lastPour !== null && lastPour.closes) {
+          soundSorted();
           softGlow(button);      // less motion: a soft warm glow instead of the ripple (sparkle.js)
         }
       }
@@ -480,6 +485,7 @@ function updateScreen() {
   showMessage();
 
   if (wrongBottle !== null && !busyBottles.has(wrongBottle)) {
+    soundWrong();   // (sound.js)
     ripple(buttons[wrongBottle]);
     wrongBottle = null;   // rippled once: done (so a later redraw does not ripple it again)
   }
@@ -705,6 +711,28 @@ function showSwitch() {
   document.getElementById("symbols-state").textContent = alwaysSymbols ? "On" : "Off";
 }
 
+// ---------- The Sound On/Off switch ----------
+
+const soundSwitch = document.getElementById("sound-switch");
+showSoundSwitch();
+
+soundSwitch.addEventListener("click", function () {
+  soundOn = !soundOn;                   // (sound.js)
+  saveSetting("soundOn", soundOn);      // remember it (save.js)
+  showSoundSwitch();
+  if (soundOn) {
+    soundPickUp();                      // a tiny click, so you hear that sound is on
+  } else {
+    stopAllSounds();                    // silence at once, also a pour that is still playing
+  }
+});
+
+// showSoundSwitch() shows the state: in words, by the knob, and for screen readers.
+function showSoundSwitch() {
+  soundSwitch.setAttribute("aria-checked", soundOn ? "true" : "false");
+  document.getElementById("sound-state").textContent = soundOn ? "On" : "Off";
+}
+
 // redrawAllBottles() draws every (not busy) bottle again, even if its layers did not change.
 function redrawAllBottles() {
   document.querySelectorAll(".bottle-button").forEach(function (button) {
@@ -749,6 +777,8 @@ document.getElementById("reset-progress").addEventListener("click", function () 
   resetProgress();                    // save.js
   alwaysSymbols = false;              // the settings are forgotten too
   showSwitch();
+  soundOn = true;
+  showSoundSwitch();
   currentLook = "liquid";
   lookMenu.value = "liquid";
   document.body.classList.remove("theme-attic");

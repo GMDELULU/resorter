@@ -49,6 +49,10 @@
         <span class="toggle-track" aria-hidden="true"><span class="toggle-knob"></span></span>
         <span class="toggle-text">Symbols: <strong id="symbols-state">Off</strong></span>
       </button>
+      <button type="button" id="sound-switch" class="toggle" role="switch" aria-checked="true">
+        <span class="toggle-track" aria-hidden="true"><span class="toggle-knob"></span></span>
+        <span class="toggle-text">Sound: <strong id="sound-state">On</strong></span>
+      </button>
     </div>
 
     <!-- The playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
@@ -70,9 +74,10 @@
     </div>
 
     <!-- JavaScript, at the end so the page is loaded first.
-         game.js = the data and rules. save.js = saving in your own browser. attic.js = the attic look. draw.js = puts them on the screen. pour.js = the pour animation. sparkle.js = stopper and firework. -->
+         game.js = the data and rules. save.js = saving in your own browser. sound.js = the sound effects. attic.js = the attic look. draw.js = puts them on the screen. pour.js = the pour animation. sparkle.js = stopper and firework. -->
     <script src="game.js"></script>
     <script src="save.js"></script>
+    <script src="sound.js"></script>
     <script src="attic.js"></script>
     <script src="draw.js"></script>
     <script src="pour.js"></script>

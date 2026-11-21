@@ -29,6 +29,7 @@ function dropStopper(button) {
     { transform: "translateY(3px)", opacity: 1, offset: 0.8 },   // a tiny bounce: a bit too far...
     { transform: "translateY(0px)", opacity: 1 }                 // ...and back
   ], { duration: 600, easing: "ease-in" });
+  soundSorted();                 // the chime (sound.js)
   celebrateBottle(button);       // the sun with feathers behind the bottle (further down)
   rippleFromBottle(button);      // and the reveal ripple across the screen (further down)
   setTimeout(function () {
@@ -188,6 +189,7 @@ function celebrateBottle(button) {
 
 // celebrateWin(): the same, but big, behind all the bottles, when the level is won.
 function celebrateWin() {
+  soundWin();   // the melody (sound.js); sound is not motion, so also with less motion
   if (wantsLessMotion()) {
     return;
   }

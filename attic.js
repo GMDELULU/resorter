@@ -189,6 +189,11 @@ async function playBoxMove(info) {
     const flightsEnd = flyTime + gap * (moved - 1);
     const total = flightsEnd + (dropping ? fallTime : 0);
     const lastBox = boxes[moved - 1];
+    boxes.forEach(function (box, k) {
+      if (!(dropping && box === lastBox)) {
+        setTimeout(function () { soundThud(false); }, k * gap + flyTime);
+      }
+    });
 
     await new Promise(function (finished) {
       const startTime = performance.now();
@@ -227,6 +232,8 @@ async function playBoxMove(info) {
       requestAnimationFrame(safeFrame);
     });
 
+    // A soft thud for every box that just lands (the final, dropping box gets a big one below).
+    // (These happen during the flight, so they were planned with setTimeout before it.)
     // The landing (only for the final box of a sorted shelf): squash, thud, dust.
     if (dropping) {
       await boxLanding(lastBox, target, size);
@@ -254,6 +261,7 @@ async function playBoxMove(info) {
 //   4. dust puffs out at both corners: short light strokes (no dots, see the style guide).
 // It gives back a promise that is kept when the squash is finished.
 function boxLanding(box, shelf, size) {
+  soundThud(true);   // the big thud (sound.js)
   // 1. Squash and spring back, from the bottom of the box.
   box.rect.style.transformBox = "fill-box";
   box.rect.style.transformOrigin = "50% 100%";
