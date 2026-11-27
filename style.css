@@ -936,39 +936,3 @@ body {
   outline: 2px solid var(--text-strong);
   outline-offset: 3px;
 }
-
-/* Previous and next page of the level grid (after level 100). */
-.levels-pages {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  margin: 16px auto 0;
-  font-family: "Josefin Sans", Arial, sans-serif;
-  font-weight: 600;
-  color: var(--text-strong);
-}
-.levels-pages[hidden] {
-  display: none;
-}
-.page-button {
-  width: 44px;
-  height: 44px;
-  font-size: 24px;
-  color: var(--text-strong);
-  background-color: var(--background);
-  border: 2px solid var(--gold);
-  border-radius: 0;
-  box-shadow: 3px 3px 0 var(--halo);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.page-button:disabled {
-  opacity: 0.35;
-  box-shadow: none;
-  cursor: default;
-}
-.page-button:focus-visible {
-  outline: 2px solid var(--text-strong);
-  outline-offset: 3px;
-}

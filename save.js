@@ -57,15 +57,12 @@ function loadProgress() {
     return;
   }
 
-  // Saves from before lesson 21a (version 1) were made with the old, easier levels.
-  // Then we keep the level number and the levels won, and start that level fresh (new curve).
-  // (Some of them are still in free play (Easy, Medium, Hard), from before lesson 20.)
+  // Saves from before lesson 21a (version 1) were made with the old, easier levels, and saves
+  // from before the game ended at level 100 can hold a level above 100.
+  // Then we keep the levels won and the level number (at most 100), and start that level fresh.
   if (isOldSave(data)) {
     levelsWon = data.levelsWon;
-    let level = savedLevel(data.levelNumber);
-    if (typeof data.difficulty === "string" && data.difficulty !== "path" && level === maxLevel) {
-      level = maxLevel + 1;   // old free play after winning all 100 levels: go on to 101
-    }
+    const level = Math.min(savedLevel(data.levelNumber), maxLevel);
     highestLevel = level;
     startPathLevel(level);    // (this also saves it in the new way)
     return;
@@ -97,22 +94,31 @@ function savedLevel(value) {
   return (value === undefined) ? 1 : value;
 }
 
-// isGoodLevelNumber(value): missing (older saves) or a whole number from 1 to highestLevelNumber.
+// isGoodLevelNumber(value): missing (older saves) or a whole number from 1 to 100.
 function isGoodLevelNumber(value) {
   return value === undefined ||
-         (Number.isInteger(value) && value >= 1 && value <= highestLevelNumber);
+         (Number.isInteger(value) && value >= 1 && value <= maxLevel);
 }
+
+// The highest level number an OLD save may hold (from when levels went on after 100).
+const oldHighestLevelNumber = 1000000;
 
 // isGoodWinCount(value): a whole number from 0 to a million.
 function isGoodWinCount(value) {
   return Number.isInteger(value) && value >= 0 && value <= 1000000;
 }
 
-// isOldSave(data): a save from before lesson 21a (version 1).
+// isOldSave(data): a save from before lesson 21a (version 1), or a save with a level above 100.
 // Only the level number and the levels won are used from it, so only those are checked.
 function isOldSave(data) {
-  return typeof data === "object" && data !== null && data.version === 1 &&
-         isGoodLevelNumber(data.levelNumber) && isGoodWinCount(data.levelsWon);
+  if (typeof data !== "object" || data === null || (data.version !== 1 && data.version !== 2)) {
+    return false;
+  }
+  const level = data.levelNumber;
+  const goodOldLevel = level === undefined ||
+                       (Number.isInteger(level) && level >= 1 && level <= oldHighestLevelNumber);
+  const old = (data.version === 1) || (Number.isInteger(level) && level > maxLevel);
+  return old && goodOldLevel && isGoodWinCount(data.levelsWon);
 }
 
 // ---------- Checking saved data (never trust it blindly) ----------

@@ -500,14 +500,20 @@ function updateScreen() {
   }
 
   // Won: after a few seconds a new level starts by itself.
-  // Not won (any more, for example after Undo): stop a waiting timer.
-  if (won && newLevelTimer === null) {
-    newLevelTimer = setTimeout(startNextLevel, newLevelDelay);
+  // Won level 100: the end. The world stays restored, and no new level comes.
+  // Not won (any more, for example after Undo): stop a waiting timer, back to chaos.
+  if (won && newLevelTimer === null && !worldRestored) {
     celebrateWin();          // the big sunburst (sparkle.js)
     startTransformation();   // the world turns from chaos to restored (sparkle.js)
-  } else if (!won && newLevelTimer !== null) {
+    if (levelNumber < maxLevel) {
+      newLevelTimer = setTimeout(startNextLevel, newLevelDelay);
+    } else {
+      worldRestored = true;  // (a closing animation will come here in a later lesson)
+    }
+  } else if (!won && (newLevelTimer !== null || worldRestored)) {
     clearTimeout(newLevelTimer);
     newLevelTimer = null;
+    worldRestored = false;
     endTransformation();     // not won any more: back to chaos
   }
 }
@@ -524,11 +530,7 @@ function showMessage() {
 function showStats() {
   const stats = document.getElementById("stats");
   const badge = document.getElementById("level-badge");   // the level indicator under the title
-  if (levelNumber <= maxLevel) {
-    badge.textContent = "Level " + levelNumber + " of " + maxLevel;
-  } else {
-    badge.textContent = "Level " + levelNumber;   // after the path: the count goes on
-  }
+  badge.textContent = "Level " + levelNumber + " of " + maxLevel;
   stats.textContent = "Moves: " + movesMade();
 }
 
@@ -540,6 +542,9 @@ const newLevelDelay = 5000;
 
 // The timer that will start the new level, or null if none is waiting.
 let newLevelTimer = null;
+
+// True after level 100 is won: the end of the game. The world stays restored.
+let worldRestored = false;
 
 // startNextLevel() makes a new level and draws it. If the player pressed Undo in the
 // meantime, the level is not won any more, and nothing happens.
@@ -741,7 +746,7 @@ function showMusicLevel() {
 // the sound ON already plays it, and switching it off is silent.
 document.addEventListener("click", function (event) {
   if (event.target.closest(".control-button, .menu-button, .toggle, .menu-item, .credits summary, " +
-                          ".panel-close, .level-tile:not(.locked), .level-badge, .page-button")) {
+                          ".panel-close, .level-tile:not(.locked), .level-badge")) {
     soundInterface();   // (sound.js)
   }
 });
@@ -826,15 +831,9 @@ const levelGrid = document.getElementById("level-grid");
 const lockPicture = '<svg viewBox="0 0 16 16" aria-hidden="true">' +
   '<path d="M3 7 H13 V15 H3 Z M5 7 V4 L6.5 2 H9.5 L11 4 V7"/></svg>';
 
-// The grid shows one page of 100 levels at a time (1-100, 101-200, ...), so it stays quick,
-// also for a player on level 5000. levelsPage: which page is shown (0 = levels 1-100).
-const levelsPerPage = 100;
-let levelsPage = 0;
-
-// openLevels() shows the panel, on the page with the current level.
+// openLevels() shows the panel with a tile for every level, 1 to 100.
 function openLevels() {
   closeMenu(false);
-  levelsPage = Math.floor((levelNumber - 1) / levelsPerPage);
   // Everything behind the panel becomes "inert": it cannot be tapped or reached with Tab,
   // so the keyboard stays in the grid.
   for (const part of document.body.children) {
@@ -843,14 +842,13 @@ function openLevels() {
     }
   }
   levelsPanel.hidden = false;
-  showLevelsPage();
+  showLevelTiles();
 }
 
-// showLevelsPage() makes the tiles of the current page (a loop): one tile per level.
-function showLevelsPage() {
+// showLevelTiles() makes the tiles (a loop): one tile per level.
+function showLevelTiles() {
   levelGrid.replaceChildren();
-  const first = levelsPage * levelsPerPage + 1;
-  for (let n = first; n < first + levelsPerPage; n++) {
+  for (let n = 1; n <= maxLevel; n++) {
     const tile = document.createElement("button");
     tile.type = "button";
     tile.className = "level-tile";
@@ -871,18 +869,10 @@ function showLevelsPage() {
     }
     levelGrid.appendChild(tile);
   }
-  // The page buttons: only when there is more than one page.
-  const lastPage = Math.floor((Math.max(maxLevel, highestLevel) - 1) / levelsPerPage);
-  document.getElementById("levels-pages").hidden = (lastPage === 0);
-  document.getElementById("levels-page-text").textContent =
-    "Levels " + first + "\u2013" + (first + levelsPerPage - 1);
-  document.getElementById("levels-previous").disabled = (levelsPage === 0);
-  document.getElementById("levels-next").disabled = (levelsPage >= lastPage);
-  // Put the keyboard on the current level if it is on this page, else on the first tile.
-  const place = (levelNumber >= first && levelNumber < first + levelsPerPage) ? levelNumber - first : 0;
-  const tile = levelGrid.children[place];
-  tile.focus();
-  tile.scrollIntoView({ block: "center" });
+  // Put the keyboard on the current level, and scroll it into view.
+  const current = levelGrid.children[levelNumber - 1];
+  current.focus();
+  current.scrollIntoView({ block: "center" });
 }
 
 // closeLevels() hides the panel. Everything behind it works again, and the keyboard goes
@@ -895,15 +885,6 @@ function closeLevels() {
   }
   document.getElementById("level-badge").focus();
 }
-
-document.getElementById("levels-previous").addEventListener("click", function () {
-  levelsPage = Math.max(0, levelsPage - 1);
-  showLevelsPage();
-});
-document.getElementById("levels-next").addEventListener("click", function () {
-  levelsPage = levelsPage + 1;
-  showLevelsPage();
-});
 
 // chooseLevel(n) starts level n, after a check.
 function chooseLevel(n) {
@@ -924,6 +905,7 @@ function chooseLevel(n) {
     clearTimeout(newLevelTimer);   // a win was waiting to start the next level: not any more
     newLevelTimer = null;
   }
+  worldRestored = false;           // (after the end: playing an old level again)
   endTransformation();             // back to the chaos world (sparkle.js)
   startPathLevel(n);               // the rule side (game.js)
   setLook(lookForLevel(n));        // the look of that level

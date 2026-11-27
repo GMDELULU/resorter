@@ -9,11 +9,8 @@ const capacity = 4;
 // ---------- The level path: the same levels for everyone (lesson 17b) ----------
 
 // The path has 100 levels. They get harder every 3 levels (see levelSettings); from level 34
-// on they stay at the hardest setting. After level 100 the level number keeps counting: 101, 102...
+// on they stay at the hardest setting. Level 100 is the end: the whole world is restored.
 const maxLevel = 100;
-
-// The highest level number a save may hold (a safety limit for checking saved data).
-const highestLevelNumber = 1000000;
 
 // The level the player is on, and the highest level reached so far (both are saved).
 // Every level up to highestLevel can be chosen in the level grid (lesson 21b).
@@ -261,7 +258,7 @@ function tapBottle(number) {
         levelsWon = levelsWon + 1;
         // The next level is now reached: it opens in the level grid. (It stays open, also after
         // Undo or Restart: you did solve it once.)
-        highestLevel = Math.max(highestLevel, Math.min(levelNumber + 1, highestLevelNumber));
+        highestLevel = Math.max(highestLevel, Math.min(levelNumber + 1, maxLevel));
         message = winMessage + " " + nextLevelText();
       }
       saveProgress();   // remember this in the browser (save.js)
@@ -421,9 +418,8 @@ function situationKey(list) {
 
 // nextLevelText() is the second half of the win message: what comes next.
 function nextLevelText() {
-  if (levelNumber === maxLevel) {
-    return "You restored the whole world: all " + maxLevel + " levels are done! Level " +
-           (levelNumber + 1) + " is coming...";
+  if (levelNumber >= maxLevel) {
+    return "You restored the whole world: all " + maxLevel + " levels are done!";
   }
   return "Level " + (levelNumber + 1) + " is coming...";
 }
@@ -445,8 +441,8 @@ function startPathLevel(n) {
   restart();
 }
 
-// nextLevel() is what happens after a win: the next level number.
-// (After level 100 levelSettings stays the same, so the levels stay as hard.)
+// nextLevel() is what happens after a win: the next level number. (After level 100 there is
+// no next level: draw.js does not call this then. Math.min is only a safety limit.)
 function nextLevel() {
-  startPathLevel(Math.min(levelNumber + 1, highestLevelNumber));   // (a safety limit, see save.js)
+  startPathLevel(Math.min(levelNumber + 1, maxLevel));
 }
