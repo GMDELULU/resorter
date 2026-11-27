@@ -205,6 +205,7 @@ function resetProgress() {
 
 // When the page opens: continue a saved game, if there is a good one.
 loadProgress();
+findBestMoves();   // (game.js) the fewest moves for the level on the screen, saved or new
 
 // ---------- Settings (like "always show symbols") ----------
 // Settings are saved apart from the game. Reset progress forgets them too (see resetProgress).

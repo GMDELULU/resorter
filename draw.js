@@ -521,9 +521,75 @@ function updateScreen() {
 // showMessage() puts the newest message on the screen.
 function showMessage() {
   const messageLine = document.getElementById("message");
-  messageLine.textContent = message;
   messageLine.classList.toggle("win", won);   // a win message looks different (see style.css)
+  if (won && winMoves !== null) {
+    // Show this win only once: drawing it again would start the bar from 0 again,
+    // and screen readers would read it out again.
+    const thisWin = levelNumber + ":" + winMoves.yours + ":" + winMoves.best;
+    if (messageLine.dataset.win !== thisWin) {
+      showWinMessage(messageLine);
+      messageLine.dataset.win = thisWin;
+    }
+  } else {
+    messageLine.textContent = message;
+    delete messageLine.dataset.win;
+  }
   showStats();
+}
+
+// showWinMessage(line) puts the win message in three parts: "Order is restored!...",
+// your moves next to the fewest possible, and what comes next.
+// The moves: green and glowing when you matched the best, dark orange when you used more.
+// (Everything is put in with textContent and createElement: no text is read as code.)
+function showWinMessage(line) {
+  line.replaceChildren();
+  addPart(line, "span", "win-title", winMessage);
+
+  const moves = addPart(line, "span", "win-moves", "");
+  const yours = winMoves.yours;
+  const best = winMoves.best;
+  const known = (best !== null && yours >= best);
+  if (known) {
+    moves.classList.add(yours === best ? "best" : "worse");
+  }
+  addPart(moves, "em", "", "You");
+  moves.append(" ");
+  addPart(moves, "b", "", String(yours));
+  moves.append(yours === 1 ? " move" : " moves");
+  if (known) {
+    moves.append(" \u00B7 ");                      // a small dot between the two
+    addPart(moves, "em", "", "Best");
+    moves.append(" ");
+    addPart(moves, "b", "", String(best));
+    if (yours === best) {
+      moves.append(" \u2014 the best possible!");  // a long dash
+    }
+  }
+  if (levelNumber < maxLevel) {
+    // A bar that fills up in the time until the next level (newLevelDelay), with the next level's number.
+    // Screen readers hear "Level 2 is coming..." instead (they cannot see the bar).
+    const next = addPart(line, "span", "win-next", "");
+    const bar = addPart(next, "span", "next-bar", "");
+    bar.setAttribute("aria-hidden", "true");
+    const fill = addPart(bar, "span", "next-bar-fill", "");
+    fill.style.animationDuration = (newLevelDelay / 1000) + "s";
+    const label = addPart(next, "span", "next-label", "Level " + (levelNumber + 1));
+    label.setAttribute("aria-hidden", "true");
+    addPart(next, "span", "screen-reader-only", nextLevelText());
+  } else {
+    addPart(line, "span", "win-next", nextLevelText());   // level 100: the end, no next level
+  }
+}
+
+// addPart(parent, type, className, text) makes a small part of the page with this text in it.
+function addPart(parent, type, className, text) {
+  const part = document.createElement(type);
+  if (className) {
+    part.className = className;
+  }
+  part.textContent = text;
+  parent.appendChild(part);
+  return part;
 }
 
 // showStats() shows the level indicator at the top, and the move counter (and levels won).

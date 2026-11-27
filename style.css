@@ -936,3 +936,80 @@ body {
   outline: 2px solid var(--text-strong);
   outline-offset: 3px;
 }
+
+/* ---------- The moves in the win message (lesson 21c) ---------- */
+
+/* The win message has three lines: the title, the moves, and what comes next. */
+.message.win span {
+  display: block;
+}
+.win-moves {
+  margin: 6px 0 4px;
+  font-family: "Josefin Sans", Arial, sans-serif;
+  font-size: 18px;
+}
+/* "YOU" and "BEST": small capitals. The numbers: big and bold. */
+.win-moves em {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.win-moves b {
+  font-size: 28px;
+  font-weight: 700;
+  padding: 0 2px;
+}
+.win-next {
+  font-size: 24px;
+}
+/* Matched the best: magic green, glowing. More moves: dark orange, glowing.
+   (The colours are in the theme file; they are darker on the light, restored background.) */
+.win-moves.best em,
+.win-moves.best b {
+  color: var(--moves-best);
+  text-shadow: 0 0 6px var(--moves-best-glow), 0 0 14px var(--moves-best-glow);
+}
+.win-moves.worse em,
+.win-moves.worse b {
+  color: var(--moves-worse);
+  text-shadow: 0 0 6px var(--moves-worse-glow), 0 0 12px var(--moves-worse-glow);
+}
+
+/* ---------- The bar to the next level (lesson 21c) ----------
+   Instead of "Level 2 is coming...": a bar that fills up in 5 seconds, with the level number. */
+.next-bar {
+  display: block;
+  width: 160px;
+  height: 10px;
+  margin: 10px auto 4px;
+  border: 2px solid var(--gold);
+  position: relative;
+}
+.next-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: var(--gold);
+  transform-origin: left;
+  animation: next-bar-fill linear forwards;   /* the time is set by draw.js (newLevelDelay) */
+}
+@keyframes next-bar-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.next-label {
+  display: block;
+  font-family: "Josefin Sans", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+}
+/* Less motion: a still, full bar. */
+@media (prefers-reduced-motion: reduce) {
+  .next-bar-fill {
+    animation: none;
+  }
+}

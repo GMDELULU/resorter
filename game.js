@@ -259,6 +259,7 @@ function tapBottle(number) {
         // The next level is now reached: it opens in the level grid. (It stays open, also after
         // Undo or Restart: you did solve it once.)
         highestLevel = Math.max(highestLevel, Math.min(levelNumber + 1, maxLevel));
+        winMoves = { yours: movesMade(), best: bestMoves };
         message = winMessage + " " + nextLevelText();
       }
       saveProgress();   // remember this in the browser (save.js)
@@ -410,6 +411,87 @@ function canBeSolved(level) {
   return false;
 }
 
+// ---------- The fewest moves (lesson 21c) ----------
+// How many moves does the shortest solution of this level need? The computer finds out with a
+// "breadth-first search": first it looks at every situation you can reach in 1 move, then every
+// situation in 2 moves, then 3... The first time it finds a solved situation, that number of
+// steps is the fewest possible. (canBeSolved above only answers yes or no, and is quicker.)
+// It works in small slices, with a short pause in between, so the game never freezes.
+
+// The answer for the level on the screen: a number, or null while it is not known (yet).
+let bestMoves = null;
+// A number for every search, so an old search (for another level) can never give its answer.
+let bestMovesSearch = 0;
+
+// findBestMoves() starts the search for the level that is on the screen now.
+function findBestMoves() {
+  bestMoves = null;
+  bestMovesSearch = bestMovesSearch + 1;
+  const thisSearch = bestMovesSearch;
+  const maxSituations = 200000;    // a safety limit: if it is bigger, we just don't know
+  const sliceTime = 8;             // milliseconds of work per slice, before a short pause
+  const seen = new Set([situationKey(startingBottles)]);
+  let layer = [copyBottles(startingBottles)];   // all situations after "steps" moves
+  let nextLayer = [];
+  let steps = 0;
+  let place = 0;                   // where we are in the layer
+
+  function slice() {
+    if (thisSearch !== bestMovesSearch) {
+      return;                      // another level started: stop this search
+    }
+    const sliceEnd = performance.now() + sliceTime;
+    while (performance.now() < sliceEnd) {
+      if (place >= layer.length) {
+        // This whole layer is checked. On to the next one (one more move).
+        if (nextLayer.length === 0 || seen.size > maxSituations) {
+          return;                  // no solution found, or too big: the answer stays unknown
+        }
+        layer = nextLayer;
+        nextLayer = [];
+        place = 0;
+        steps = steps + 1;
+      }
+      const situation = layer[place];
+      place = place + 1;
+      if (situation.every(isSorted)) {
+        bestMoves = steps;         // found: the fewest moves
+        return;
+      }
+      for (let from = 0; from < situation.length; from++) {
+        const source = situation[from];
+        if (source.length === 0 || isClosed(source)) {
+          continue;
+        }
+        for (let to = 0; to < situation.length; to++) {
+          if (from === to || whyNotPour(from, to, situation) !== "") {
+            continue;
+          }
+          if (situation[to].length === 0 && source.every(function (c) { return c === source[0]; })) {
+            continue;              // pointless, as in canBeSolved
+          }
+          const next = copyBottles(situation);
+          pour(from, to, next);
+          const key = situationKey(next);
+          if (!seen.has(key)) {
+            if (seen.size >= maxSituations) {
+              return;              // too big: stop at once (so a phone never runs out of memory)
+            }
+            seen.add(key);
+            nextLayer.push(next);
+          }
+        }
+      }
+    }
+    setTimeout(slice, 0);          // a short pause, so taps and animations go on; then the next slice
+  }
+  setTimeout(slice, 0);
+}
+
+// The moves of the last win: { yours, best } (best is null when it is not known).
+// draw.js shows them in the win message.
+let winMoves = null;
+
 // situationKey(list) turns a situation into a short text, like "1,2,4|3,3|...".
 // The bottles are sorted first, so the same bottles in another order count as the same situation.
 function situationKey(list) {
@@ -439,6 +521,7 @@ function startPathLevel(n) {
   emptyBottles = levelSettings(n).empty;
   startingBottles = makeRandomLevel(levelRandom(n));
   restart();
+  findBestMoves();   // in the background: the fewest moves for this level
 }
 
 // nextLevel() is what happens after a win: the next level number. (After level 100 there is

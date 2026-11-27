@@ -55,6 +55,12 @@
   --ripple-edge: #F7C948;         /* the thin bright outer edge of the ripple */
   --ripple-glow: #E8D5A8;         /* soft warm glow instead of the ripple, for less motion */
   --sparkle-white: #FFFFFF;       /* white sparkles riding on the ripple edge */
+
+  /* ---------- The moves in the win message (lesson 21c) ---------- */
+  --moves-best: #7CF5B4;          /* magic green: you matched the fewest moves */
+  --moves-best-glow: #2FD98A;
+  --moves-worse: #F08A3C;         /* dark glowing orange: more moves than the fewest */
+  --moves-worse-glow: #B4481A;
 }
 
 /* ---------- The restored world: after a win (the win transformation, lesson 15b) ----------
@@ -67,4 +73,9 @@
   --halo: var(--restored-halo);
   --text: var(--restored-pencil);          /* brown text: readable on the light background */
   --text-strong: var(--restored-pencil);
+  /* On the light background: darker letters with a lighter glow, so they stay readable. */
+  --moves-best: #0B6B42;
+  --moves-best-glow: #7CF5B4;
+  --moves-worse: #9A3E0E;
+  --moves-worse-glow: #F7B27A;
 }
