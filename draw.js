@@ -508,12 +508,14 @@ function updateScreen() {
     if (levelNumber < maxLevel) {
       newLevelTimer = setTimeout(startNextLevel, newLevelDelay);
     } else {
-      worldRestored = true;  // (a closing animation will come here in a later lesson)
+      worldRestored = true;
+      castRestoreSpell();    // the restore spell: the whole world is restored (spell.js)
     }
   } else if (!won && (newLevelTimer !== null || worldRestored)) {
     clearTimeout(newLevelTimer);
     newLevelTimer = null;
     worldRestored = false;
+    stopRestoreSpell();      // (spell.js) stop the spell if it is still playing
     endTransformation();     // not won any more: back to chaos
   }
 }
@@ -972,6 +974,7 @@ function chooseLevel(n) {
     newLevelTimer = null;
   }
   worldRestored = false;           // (after the end: playing an old level again)
+  stopRestoreSpell();              // (spell.js) stop the spell if it is still playing
   endTransformation();             // back to the chaos world (sparkle.js)
   startPathLevel(n);               // the rule side (game.js)
   setLook(lookForLevel(n));        // the look of that level

@@ -1013,3 +1013,15 @@ body {
     animation: none;
   }
 }
+
+/* ---------- The restore spell after level 100 (lesson 21d, spell.js) ----------
+   A drawing sheet over the whole screen. Taps go straight through it. */
+.spell-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 6;
+}
