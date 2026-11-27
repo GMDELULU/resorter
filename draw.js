@@ -740,7 +740,8 @@ function showMusicLevel() {
 // out if the tap was on (or inside) one of them. It runs after the button's own work, so switching
 // the sound ON already plays it, and switching it off is silent.
 document.addEventListener("click", function (event) {
-  if (event.target.closest(".control-button, .menu-button, .toggle, .menu-item, .credits summary")) {
+  if (event.target.closest(".control-button, .menu-button, .toggle, .menu-item, .credits summary, " +
+                          ".panel-close, .level-tile:not(.locked), .level-badge, .page-button")) {
     soundInterface();   // (sound.js)
   }
 });
@@ -815,6 +816,133 @@ document.addEventListener("click", function (event) {
     closeMenu(false);
   }
 }, true);
+
+// ---------- The level grid (lesson 21b) ----------
+
+const levelsPanel = document.getElementById("levels-panel");
+const levelGrid = document.getElementById("level-grid");
+
+// A small lock, drawn with straight lines (angular, like the rest of the game).
+const lockPicture = '<svg viewBox="0 0 16 16" aria-hidden="true">' +
+  '<path d="M3 7 H13 V15 H3 Z M5 7 V4 L6.5 2 H9.5 L11 4 V7"/></svg>';
+
+// The grid shows one page of 100 levels at a time (1-100, 101-200, ...), so it stays quick,
+// also for a player on level 5000. levelsPage: which page is shown (0 = levels 1-100).
+const levelsPerPage = 100;
+let levelsPage = 0;
+
+// openLevels() shows the panel, on the page with the current level.
+function openLevels() {
+  closeMenu(false);
+  levelsPage = Math.floor((levelNumber - 1) / levelsPerPage);
+  // Everything behind the panel becomes "inert": it cannot be tapped or reached with Tab,
+  // so the keyboard stays in the grid.
+  for (const part of document.body.children) {
+    if (part !== levelsPanel && part.tagName !== "SCRIPT") {
+      part.inert = true;
+    }
+  }
+  levelsPanel.hidden = false;
+  showLevelsPage();
+}
+
+// showLevelsPage() makes the tiles of the current page (a loop): one tile per level.
+function showLevelsPage() {
+  levelGrid.replaceChildren();
+  const first = levelsPage * levelsPerPage + 1;
+  for (let n = first; n < first + levelsPerPage; n++) {
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "level-tile";
+    if (n > highestLevel) {
+      tile.classList.add("locked");
+      tile.innerHTML = lockPicture;   // (our own fixed drawing, not data from outside)
+      tile.setAttribute("aria-label", "Level " + n + ", locked");
+      tile.setAttribute("aria-disabled", "true");
+      tile.tabIndex = -1;             // Tab skips the locked tiles
+    } else {
+      tile.textContent = n;
+      tile.setAttribute("aria-label", "Level " + n);
+      tile.addEventListener("click", function () { chooseLevel(n); });
+    }
+    if (n === levelNumber) {
+      tile.classList.add("current");
+      tile.setAttribute("aria-current", "true");   // screen readers: "current"
+    }
+    levelGrid.appendChild(tile);
+  }
+  // The page buttons: only when there is more than one page.
+  const lastPage = Math.floor((Math.max(maxLevel, highestLevel) - 1) / levelsPerPage);
+  document.getElementById("levels-pages").hidden = (lastPage === 0);
+  document.getElementById("levels-page-text").textContent =
+    "Levels " + first + "\u2013" + (first + levelsPerPage - 1);
+  document.getElementById("levels-previous").disabled = (levelsPage === 0);
+  document.getElementById("levels-next").disabled = (levelsPage >= lastPage);
+  // Put the keyboard on the current level if it is on this page, else on the first tile.
+  const place = (levelNumber >= first && levelNumber < first + levelsPerPage) ? levelNumber - first : 0;
+  const tile = levelGrid.children[place];
+  tile.focus();
+  tile.scrollIntoView({ block: "center" });
+}
+
+// closeLevels() hides the panel. Everything behind it works again, and the keyboard goes
+// back to the level indicator.
+function closeLevels() {
+  levelsPanel.hidden = true;
+  levelGrid.replaceChildren();   // (the tiles are made again next time)
+  for (const part of document.body.children) {
+    part.inert = false;
+  }
+  document.getElementById("level-badge").focus();
+}
+
+document.getElementById("levels-previous").addEventListener("click", function () {
+  levelsPage = Math.max(0, levelsPage - 1);
+  showLevelsPage();
+});
+document.getElementById("levels-next").addEventListener("click", function () {
+  levelsPage = levelsPage + 1;
+  showLevelsPage();
+});
+
+// chooseLevel(n) starts level n, after a check.
+function chooseLevel(n) {
+  if (n < 1 || n > highestLevel) {
+    return;   // a locked level: never (also not by a trick)
+  }
+  if (busyBottles.size > 0) {
+    // A move is still playing: try again in a moment (like startNextLevel does).
+    setTimeout(function () { chooseLevel(n); }, 300);
+    return;
+  }
+  // Moves in this level would be lost: ask first. (Not needed after a win.)
+  if (moveHistory.length > 0 && !won &&
+      !confirm("Start level " + n + "? The moves you made in this level will be lost.")) {
+    return;
+  }
+  if (newLevelTimer !== null) {
+    clearTimeout(newLevelTimer);   // a win was waiting to start the next level: not any more
+    newLevelTimer = null;
+  }
+  endTransformation();             // back to the chaos world (sparkle.js)
+  startPathLevel(n);               // the rule side (game.js)
+  setLook(lookForLevel(n));        // the look of that level
+  keyboardBottle = 0;
+  drawBottles();
+  updateScreen();
+  closeLevels();
+}
+
+// The level indicator under the title opens the grid.
+document.getElementById("level-badge").addEventListener("click", openLevels);
+document.getElementById("levels-close").addEventListener("click", closeLevels);
+
+// The Escape key closes the level grid.
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape" && !levelsPanel.hidden) {
+    closeLevels();
+  }
+});
 
 // ---------- Reset progress ----------
 

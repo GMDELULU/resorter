@@ -13,8 +13,10 @@
     <h1>ReSorter</h1>
     <p>Kharosa has mixed up the world. Help sort it back into order.</p>
 
-    <!-- The level indicator: which level you are on. -->
-    <p class="level-line"><span class="level-badge" id="level-badge">Level 1 of 100</span></p>
+    <!-- The level indicator: which level you are on. It is also a button: it opens the level grid.
+         aria-haspopup="dialog": screen readers hear that it opens a window. -->
+    <p class="level-line"><button type="button" class="level-badge" id="level-badge"
+       aria-haspopup="dialog">Level 1 of 100</button></p>
 
     <!-- A: the playing field. It starts empty: draw.js fills it with bottles from the data in game.js. -->
     <div class="bottles" id="bottles"></div>
@@ -73,6 +75,23 @@
       </details>
       <!-- Forget everything the game saved in this browser (privacy: the player decides). -->
       <button type="button" class="menu-item" id="reset-progress">Reset progress</button>
+    </div>
+
+    <!-- The level grid (lesson 21b): a panel over the whole screen with a numbered tile for every
+         level. draw.js makes the tiles. Levels up to the highest level reached can be chosen;
+         later ones are locked. role="dialog": screen readers hear it as a separate window. -->
+    <div class="levels-panel" id="levels-panel" role="dialog" aria-modal="true" aria-labelledby="levels-title" hidden>
+      <div class="levels-header">
+        <h2 id="levels-title">Levels</h2>
+        <button type="button" class="panel-close" id="levels-close" aria-label="Close the levels">&#10005;</button>
+      </div>
+      <div class="level-grid" id="level-grid"></div>
+      <!-- Previous and next page (only shown after level 100). -->
+      <div class="levels-pages" id="levels-pages" hidden>
+        <button type="button" class="page-button" id="levels-previous" aria-label="Previous 100 levels">&#8249;</button>
+        <span id="levels-page-text">Levels 1&#8211;100</span>
+        <button type="button" class="page-button" id="levels-next" aria-label="Next 100 levels">&#8250;</button>
+      </div>
     </div>
 
     <!-- The menu button (a "hamburger": three lines). aria-expanded tells screen readers

@@ -535,13 +535,33 @@ body::before {
 /* ---------- The switches (in the menu) and the level indicator ---------- */
 
 /* The level indicator: which level you are on. Plain, clear letters in strong contrast. */
+/* It is also the button that opens the level grid, so it has the gold outline of a button
+   (house rule: things you can tap look tappable), and a small arrow that says "more here". */
 .level-badge {
+  min-height: 44px;
+  padding: 6px 14px;
   font-family: "Josefin Sans", Arial, sans-serif;
   font-size: 17px;
   font-weight: 600;
   color: var(--text-strong);
-  padding: 6px 10px;
-  border-bottom: 2px solid var(--gold);
+  background-color: var(--background);
+  border: 2px solid var(--gold);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--halo);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.level-badge::after {
+  content: " \25BE";                /* a small arrow pointing down */
+  content: " \25BE" / "";           /* the same, but screen readers skip it (where browsers know this) */
+}
+.level-badge:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--halo);
+}
+.level-badge:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 4px;
 }
 
 /* The switch: small, but still at least 44 pixels high to tap. Clear, plain letters
@@ -823,4 +843,132 @@ body {
 .menu-slider input[type="range"]:focus-visible {
   outline: 2px solid var(--text-strong);
   outline-offset: 2px;
+}
+
+/* ---------- The level grid (lesson 21b) ---------- */
+
+/* The panel covers the whole screen, above everything else. It may scroll up and down. */
+.levels-panel {
+  position: fixed;
+  inset: 0;                        /* top, right, bottom and left all 0: the whole screen */
+  overflow-y: auto;
+  background-color: var(--background);
+  z-index: 30;
+  padding: 12px 16px 24px;
+  overscroll-behavior: contain;    /* scrolling to the end does not scroll the page behind it */
+}
+.levels-panel[hidden] {
+  display: none;
+}
+
+/* The top line: the word "Levels" and the close button. */
+.levels-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 420px;
+  margin: 0 auto 12px;
+}
+.levels-header h2 {
+  margin: 0;
+  font-family: "Syne Tactile", Georgia, serif;
+  font-size: 28px;
+  color: var(--text-strong);
+}
+.panel-close {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  color: var(--text-strong);
+  background-color: var(--background);
+  border: 2px solid var(--gold);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--halo);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* The tiles: 5 in a row. Each tile is square and at least 44 pixels (a thumb). */
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+.level-tile {
+  aspect-ratio: 1;                 /* as high as it is wide: a square */
+  min-height: 44px;
+  font-family: "Josefin Sans", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-strong);
+  background-color: var(--background);
+  border: 2px solid var(--gold);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--halo);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+/* The level you are on now: filled with gold. */
+.level-tile.current {
+  color: var(--background);
+  background-color: var(--gold);
+}
+/* A locked level: dark, without the second line, and a lock instead of the number.
+   It does not look like a button, because you cannot use it (house rule). */
+.level-tile.locked {
+  color: var(--halo);
+  border-color: var(--halo);
+  box-shadow: none;
+  opacity: 0.45;
+  cursor: default;
+}
+.level-tile svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;            /* the lock has the colour of the text */
+  fill: none;
+  stroke-width: 2;
+}
+.level-tile:focus-visible,
+.panel-close:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 3px;
+}
+
+/* Previous and next page of the level grid (after level 100). */
+.levels-pages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin: 16px auto 0;
+  font-family: "Josefin Sans", Arial, sans-serif;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.levels-pages[hidden] {
+  display: none;
+}
+.page-button {
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+  color: var(--text-strong);
+  background-color: var(--background);
+  border: 2px solid var(--gold);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--halo);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.page-button:disabled {
+  opacity: 0.35;
+  box-shadow: none;
+  cursor: default;
+}
+.page-button:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 3px;
 }
